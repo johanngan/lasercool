@@ -11,6 +11,8 @@ fname = 'test.txt'
 skiprows = 0
 usecols = None
 
+# "plot", "semilogx", "semilogy", "loglog"
+axis_mode = "semilogy"
 plot_title = ''
 plot_xlabel = ''
 plot_ylabel = ''
@@ -36,7 +38,14 @@ for i in range(dep_vars.shape[1]):
     # Default to no options if all the options have been used up
     kwargs = plot_options[i] if i < len(plot_options) else {}
     # Recycle plot options if there aren't enough to cover all variables
-    line, = ax.plot(indep_var, dep_vars[:, i], **kwargs)
+    if axis_mode == "loglog":
+        line, = ax.loglog(indep_var, dep_vars[:, i], **kwargs)
+    elif axis_mode == "semilogy":
+        line, = ax.semilogy(indep_var, dep_vars[:, i], **kwargs)
+    elif axis_mode == "semilogx":
+        line, = ax.semilogx(indep_var, dep_vars[:, i], **kwargs)
+    else:
+        line, = ax.plot(indep_var, dep_vars[:, i], **kwargs)
     # Show all labels (strip surrounding underscores)
     line.set_label(line.get_label().strip('_'))
 ax.legend()
