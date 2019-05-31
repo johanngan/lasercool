@@ -13,4 +13,4 @@ $(OBJ): $(SRC)
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf $(OBJ)
+	rm -rf $(OBJ) $(TARGET)

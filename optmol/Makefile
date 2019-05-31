@@ -1,5 +1,5 @@
 CC = g++
-INCS = -I../lib
+INCS = -I../lib -I../vendor/pcg-cpp-0.98/include
 LPATHS = -L../lib
 LIBS = -lm -lreadcfg
 CFLAGS = -c -std=c++11 -O3 -Wall -Wextra
@@ -15,4 +15,4 @@ $(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) $(INCS) $< -o $@
 
 clean:
-	rm -rf $(OBJS)
+	rm -rf $(OBJS) $(EXEC)
