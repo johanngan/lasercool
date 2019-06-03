@@ -33,13 +33,16 @@ int main(int argc, char** argv) {
     }
 
     // Read in parameters
-    double rabi_freq_per_decay_rate, detuning_per_decay_rate, initial_temp,
+    double rabi_freq_per_decay_rate, initial_detuning_per_decay_rate, 
+        final_detuning_per_decay_rate, detuning_ramp_rate_natl_units, initial_temp,
         dt, duration, n_particles_double;
     unsigned n_particles;
     load_params(CFG_FILE,
         {
             {"rabi_frequency", &rabi_freq_per_decay_rate},
-            {"detuning", &detuning_per_decay_rate},
+            {"initial_detuning", &initial_detuning_per_decay_rate},
+            {"final_detuning", &final_detuning_per_decay_rate},
+            {"detuning_ramp_rate", &detuning_ramp_rate_natl_units},
             {"initial_temperature", &initial_temp},
             {"time_step", &dt},
             {"duration", &duration},
@@ -47,15 +50,11 @@ int main(int argc, char** argv) {
         }
     );
     n_particles = static_cast<unsigned>(n_particles_double);
+
     // Set Rabi frequency and detuning in terms of spontaneous decay rate
     double rabi_freq = rabi_freq_per_decay_rate * decay_rate;
-    double detuning = detuning_per_decay_rate * decay_rate;
-
-    // Calculate the wavenumber of the laser light
-    double laser_wavenumber = calc_laser_wavenumber(resonant_wavenumber,
-        detuning);
-    // velocity kick from a single photon absorption/emission
-    double v_kick = HBAR*laser_wavenumber / mass;
+    double initial_detuning = initial_detuning_per_decay_rate * decay_rate;
+    double final_detuning = final_detuning_per_decay_rate * decay_rate;
 
     std::cout
         << "Parameters:" << std::endl
@@ -63,22 +62,27 @@ int main(int argc, char** argv) {
         << "    N: " << n_particles << std::endl
         << "    Rabi frequency per decay rate: " << rabi_freq_per_decay_rate
         << std::endl
-        << "    Detuning per decay rate: " << detuning_per_decay_rate
-        << std::endl
-        << "    Laser wavelength: " << 2*M_PI/laser_wavenumber * 1e9 << " nm"
-        << std::endl
+        << "    Initial detuning per decay rate: "
+        << initial_detuning_per_decay_rate << std::endl
+        << "    Final detuning per decay rate: "
+        << final_detuning_per_decay_rate << std::endl
+        << "    Final laser wavelength: "
+        << 2*M_PI/calc_laser_wavenumber(resonant_wavenumber, final_detuning)
+             * 1e9 << " nm" << std::endl
         << "    Temperature: " << initial_temp << " K" << std::endl
         << "    Time step * max decay rate: " << dt << std::endl
         << "    Duration * max decay rate: " << duration << std::endl;
     std::cout << "Expected optical molasses equilibrium temperature: "
-        << expected_min_temp(decay_rate, detuning) << " K"
+        << expected_min_temp(decay_rate, final_detuning) << " K"
         << std::endl;
 
     // Calculate number of time steps for speed
     unsigned n_time_steps = static_cast<unsigned>(ceil(duration / dt));
 
-    // Set time step and duration in terms of the max absorption rate
+    // Set the time scale in terms of max absorption rate
     double max_absorb_rate = calc_absorb_rate(decay_rate, rabi_freq);
+    double detuning_ramp_rate = detuning_ramp_rate_natl_units
+        * decay_rate * max_absorb_rate;
     dt /= max_absorb_rate;
     duration /= max_absorb_rate;
 
@@ -112,7 +116,9 @@ int main(int argc, char** argv) {
     std::ostringstream suffix_ss;
     suffix_ss << "N" << n_particles
         << "_Omega" << rabi_freq_per_decay_rate
-        << "_Delta" << detuning_per_decay_rate
+        << "_Delta" << initial_detuning_per_decay_rate << "to"
+        << final_detuning_per_decay_rate
+        << "_RampRate" << detuning_ramp_rate_natl_units
         << "_Temp" << initial_temp;
 
     std::ofstream energy_outfile(OUTPUT_DIR + "/" + tag_filename(
@@ -145,6 +151,14 @@ int main(int argc, char** argv) {
     std::uniform_real_distribution<> uniform_dist;
     // Run over each time step
     for(unsigned i = 0; i < n_time_steps; ++i) {
+        // Ramped detuning and photon wavenumber
+        double detuning = calc_ramp((i+1)*dt,
+            initial_detuning, final_detuning, detuning_ramp_rate);
+        double laser_wavenumber = calc_laser_wavenumber(
+            resonant_wavenumber, detuning);
+        // velocity kick from a single photon absorption/emission
+        double v_kick = HBAR*laser_wavenumber / mass;
+
         // Run over each particle
         for(auto vp = v_particles.begin(); vp != v_particles.end(); ++vp) {
             // Iterate over each of the 6 lasers
@@ -222,6 +236,15 @@ double sqr(double x) {
 double calc_absorb_rate(double decay_rate, double rabi_freq, double detuning) {
     return 0.25*decay_rate*sqr(rabi_freq)
         / (sqr(detuning) + 0.5*sqr(rabi_freq) + 0.25*sqr(decay_rate));
+}
+
+double calc_ramp(double t, double init, double final, double rate) {
+    double min_val = std::min(init, final);
+    double max_val = std::max(init, final);
+    return std::max(min_val,
+        std::min(max_val,
+            init + rate*t
+        ));
 }
 
 double calc_laser_wavenumber(double resonant_wavenumber, double detuning) {

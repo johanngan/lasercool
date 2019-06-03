@@ -15,6 +15,8 @@
 double sqr(double);
 // Calculate the absorption rate of photons
 double calc_absorb_rate(double, double, double detuning=0);
+// Calculate the ramped detuning
+double calc_ramp(double, double, double, double);
 // Calculate the laser light wavenumber
 double calc_laser_wavenumber(double, double);
 // Calculate average kinetic energy of an ensemble
