@@ -83,7 +83,8 @@ int main(int argc, char** argv) {
     duration /= max_absorb_rate;
 
     // Set up RNG
-    std::mt19937 generator(std::random_device{}());
+    pcg32 generator(pcg_extras::seed_seq_from<std::random_device>{});
+    // std::mt19937 generator(std::random_device{}());
 
     // Initialize particles to a thermal distribution
     // Gaussian in each velocity component, with mean 0 and

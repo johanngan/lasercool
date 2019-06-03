@@ -9,6 +9,7 @@
 #include <chrono>
 #include "constants.hpp"
 #include "read_config.hpp"
+#include "pcg_random.hpp"
 
 // Square a number
 double sqr(double);
