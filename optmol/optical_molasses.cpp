@@ -161,7 +161,8 @@ int main(int argc, char** argv) {
                     rabi_freq, doppler_detuning);
 
                 // Decide whether or not to absorb a photon
-                if(uniform_dist(generator) >= absorb_rate*dt) {
+                if(uniform_dist(generator) >=
+                    absorb_rate*dt - sqr(absorb_rate*dt)/2) {
                     continue;
                 }
 
