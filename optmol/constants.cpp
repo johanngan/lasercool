@@ -2,6 +2,8 @@
 
 const double HBAR = 1.054571800e-34;
 const double SPEED_OF_LIGHT = 299792458;
+const double VACUUM_PERMITTIVITY = 8.8541878128e-12;
+const double ELEMENTARY_CHARGE = 1.602176634e-19;
 const double K_BOLTZMANN = 1.380649e-23;
 // Relative mass of neutral Be = 9.0121831 u
 // u = 1.6605390660e-27 kg

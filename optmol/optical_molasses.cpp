@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     // Read in parameters
     double rabi_freq_per_decay_rate, initial_detuning_per_decay_rate, 
         final_detuning_per_decay_rate, detuning_ramp_rate_natl_units, initial_temp,
-        dt, duration, n_particles_double, collisions_per_step_double;
+        dt, duration, n_particles_double, particle_density;
     load_params(CFG_FILE,
         {
             {"rabi_frequency", &rabi_freq_per_decay_rate},
@@ -46,12 +46,10 @@ int main(int argc, char** argv) {
             {"time_step", &dt},
             {"duration", &duration},
             {"n_particles", &n_particles_double},
-            {"collisions_per_step", &collisions_per_step_double}
+            {"particle_density", &particle_density}
         }
     );
     unsigned n_particles = static_cast<unsigned>(n_particles_double);
-    unsigned collisions_per_step = 
-        static_cast<unsigned>(collisions_per_step_double);
 
     // Set Rabi frequency and detuning in terms of spontaneous decay rate
     double rabi_freq = rabi_freq_per_decay_rate * decay_rate;
@@ -62,6 +60,7 @@ int main(int argc, char** argv) {
         << "Parameters:" << std::endl
         << "    Particle species: " << particle_species << std::endl
         << "    N: " << n_particles << std::endl
+        << "    Density: " << particle_density << std::endl
         << "    Rabi frequency per decay rate: " << rabi_freq_per_decay_rate
         << std::endl
         << "    Initial detuning per decay rate: "
@@ -87,6 +86,15 @@ int main(int argc, char** argv) {
         * decay_rate * max_absorb_rate;
     dt /= max_absorb_rate;
     duration /= max_absorb_rate;
+
+    // Precompute certain values for the scattering rate
+    // So each particle has on average one collision per time step
+    unsigned collisions_per_step = n_particles / 2;
+    // Unchanging coefficient on the scattering probability, where
+    // P(scatter in interval dt) = coeff*(coulomb log)*dt/(relative speed)^3
+    // See http://www.physics.purdue.edu/~robichf/papers/PoP10_2217.pdf
+    double scatter_coeff = particle_density*pow(ELEMENTARY_CHARGE, 4)
+        / (M_PI*sqr(VACUUM_PERMITTIVITY*mass));
 
     // Set up RNG
     pcg32 generator(pcg_extras::seed_seq_from<std::random_device>{});
@@ -117,6 +125,7 @@ int main(int argc, char** argv) {
     // Output files
     std::ostringstream suffix_ss;
     suffix_ss << "N" << n_particles
+        << "_Density" << particle_density
         << "_Omega" << rabi_freq_per_decay_rate
         << "_Delta" << initial_detuning_per_decay_rate << "to"
         << final_detuning_per_decay_rate
@@ -147,6 +156,7 @@ int main(int argc, char** argv) {
 
     /// COUNTING
     unsigned n_heat = 0, n_cool = 0;
+    unsigned long n_collisions = 0;
     ///
 
     // [0, 1) uniform distribution
@@ -205,9 +215,17 @@ int main(int argc, char** argv) {
             // Insert the desired measurement calculations //
         }
         // Insert the desired measurement calculations //
+        // Average kinetic energy
+        // Note that scattering particles conserves kinetic energy,
+        // so it doesn't have to be recomputed later
+        double avgKE = calc_avg_kinetic_energy(v_particles, mass);
+        if((i+1) % steps_between_snapshots == 0) {
+            energy_outfile << std::endl << (i+1)*dt << " " <<
+                avgKE/K_BOLTZMANN;
+        }
 
         // Scatter some number of particles if possible
-        if(n_particles > 1) {
+        if(n_particles > 1 && scatter_coeff > 0) {
             for(unsigned i_scat = 0; i_scat < collisions_per_step; ++i_scat) {
                 // Choose two particles to scatter
                 unsigned idx1 = uniform_idx_dist(generator);
@@ -217,6 +235,20 @@ int main(int argc, char** argv) {
                     idx2 = uniform_idx_dist(generator);
                 } while(idx1 == idx2);
 
+                // Decide whether to scatter or not
+                double rel_speed = calc_rel_speed(
+                    v_particles[idx1], v_particles[idx2]);
+                // 1+ to keep the argument above 1
+                double coulomb_log = log(1 + 12*M_PI/cube(ELEMENTARY_CHARGE)
+                    * sqrt(8*cube(VACUUM_PERMITTIVITY*avgKE)/(27*particle_density)));
+                double scatter_prob = scatter_coeff*coulomb_log*dt/cube(rel_speed);
+
+                if(uniform_dist(generator) >= scatter_prob) {
+                    continue;
+                }
+                n_collisions += 1;
+
+                // Carry on with scattering the pair
                 // Get a random direction for scattering
                 double cos_theta = 2*uniform_dist(generator) - 1;
                 double phi = 2*M_PI*uniform_dist(generator);
@@ -229,12 +261,6 @@ int main(int argc, char** argv) {
                 v_particles[idx1] = scattered_vels.first;
                 v_particles[idx2] = scattered_vels.second;
             }
-        }
-
-        // Average kinetic energy
-        if((i+1) % steps_between_snapshots == 0) {
-            energy_outfile << std::endl << (i+1)*dt << " " <<
-                calc_avg_kinetic_energy(v_particles, mass)/K_BOLTZMANN;
         }
     }
     energy_outfile.close();
@@ -254,11 +280,20 @@ int main(int argc, char** argv) {
     std::cout << "Total runtime: " << total_seconds.count() << " s" << std::endl;
     std::cout << "Number of heating events: " << n_heat << std::endl
         << "Number of cooling events: " << n_cool << std::endl;
+    std::cout << "Average collision success rate per time step: "
+        << static_cast<double>(n_collisions)/(collisions_per_step*n_time_steps)
+        << std::endl;
+    std::cout << "Collision rate/max absorption rate: "
+        << n_collisions / (duration*max_absorb_rate) << std::endl;
     ///
 }
 
 double sqr(double x) {
     return x*x;
+}
+
+double cube(double x) {
+    return x*x*x;
 }
 
 double calc_absorb_rate(double decay_rate, double rabi_freq, double detuning) {
@@ -292,12 +327,15 @@ double expected_min_temp(double decay_rate, double detuning) {
     return -0.125*HBAR/K_BOLTZMANN * (sqr(decay_rate) + 4*sqr(detuning))/detuning;
 }
 
+double calc_rel_speed(
+    const std::vector<double>& v1, const std::vector<double>& v2) {
+    return sqrt(sqr(v1[0]-v2[0]) + sqr(v1[1]-v2[1]) + sqr(v1[2]-v2[2]));
+}
+
 std::pair< std::vector<double>, std::vector<double> > scatter_pair(
     const std::vector<double>& v1, const std::vector<double>& v2,
     const std::vector<double>& rand_dir) {
-    // Relative speed
-    double rel_speed = sqrt(
-        sqr(v1[0]-v2[0]) + sqr(v1[1]-v2[1]) + sqr(v1[2]-v2[2]));
+    double rel_speed = calc_rel_speed(v1, v2);
     
     std::vector<double> new_v1, new_v2;
     new_v1.reserve(v1.size());

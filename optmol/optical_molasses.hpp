@@ -13,6 +13,8 @@
 
 // Square a number
 double sqr(double);
+// Cube a number
+double cube(double);
 // Calculate the absorption rate of photons
 double calc_absorb_rate(double, double, double detuning=0);
 // Calculate the ramped detuning
@@ -24,6 +26,8 @@ double calc_avg_kinetic_energy(const std::vector< std::vector<double> >&,
     double);
 // Calculate optical molasses theoretical equilibrium temperature
 double expected_min_temp(double, double);
+// Compute the relative speed between two particles
+double calc_rel_speed(const std::vector<double>&, const std::vector<double>&);
 // Scatter two particles in a collision
 std::pair< std::vector<double>, std::vector<double> > scatter_pair(
     const std::vector<double>&, const std::vector<double>&,
