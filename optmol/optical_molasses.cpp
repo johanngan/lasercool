@@ -71,9 +71,14 @@ int main(int argc, char** argv) {
         << 2*M_PI/calc_laser_wavenumber(resonant_wavenumber, final_detuning)
              * 1e9 << " nm" << std::endl
         << "    Temperature: " << initial_temp << " K" << std::endl
-        << "    Time step * max decay rate: " << dt << std::endl
-        << "    Duration * max decay rate: " << duration << std::endl;
-    std::cout << "Expected optical molasses equilibrium temperature: "
+        << "    Time step * max absorption rate: " << dt << std::endl
+        << "    Duration * max absorption rate: " << duration << std::endl;
+    std::cout << "Optimal initial detuning per decay rate: "
+        << optimal_detuning(initial_temp, mass,
+            calc_laser_wavenumber(resonant_wavenumber, final_detuning))
+            / decay_rate
+        << std::endl
+        << "Expected optical molasses equilibrium temperature: "
         << expected_min_temp(decay_rate, final_detuning) << " K"
         << std::endl;
 
@@ -325,6 +330,10 @@ double calc_avg_kinetic_energy(const std::vector< std::vector<double> >& velocit
 
 double expected_min_temp(double decay_rate, double detuning) {
     return -0.125*HBAR/K_BOLTZMANN * (sqr(decay_rate) + 4*sqr(detuning))/detuning;
+}
+
+double optimal_detuning(double temp, double mass, double wavenumber) {
+    return -wavenumber * sqrt(K_BOLTZMANN*temp/mass);
 }
 
 double calc_rel_speed(

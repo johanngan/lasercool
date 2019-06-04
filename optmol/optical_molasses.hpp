@@ -26,6 +26,9 @@ double calc_avg_kinetic_energy(const std::vector< std::vector<double> >&,
     double);
 // Calculate optical molasses theoretical equilibrium temperature
 double expected_min_temp(double, double);
+// Calculate detuning with the highest theoretical cooling rate in the high
+// temperature limit
+double optimal_detuning(double, double, double); 
 // Compute the relative speed between two particles
 double calc_rel_speed(const std::vector<double>&, const std::vector<double>&);
 // Scatter two particles in a collision
