@@ -18,6 +18,9 @@ plot_xlabel = ''
 plot_ylabel = ''
 # list of kwargs dictionaries for each plotted line
 plot_options = []
+
+# Number of yticks to use if there are none in the axis range by default
+n_yticks = 2
 ######## END CONFIGURATION ########
 
 data = np.loadtxt(fname, skiprows=skiprows, usecols=usecols)
@@ -48,6 +51,17 @@ for i in range(dep_vars.shape[1]):
         line, = ax.plot(indep_var, dep_vars[:, i], **kwargs)
     # Show all labels (strip surrounding underscores)
     line.set_label(line.get_label().strip('_'))
+# Set y ticks if there are none in the axis range
+if np.sum(np.logical_and(
+    ax.get_yticks() >= ax.get_ylim()[0],
+    ax.get_yticks() <= ax.get_ylim()[1])) == 0:
+    if axis_mode == "semilogy" or axis_mode == "loglog":
+        yticks = np.logspace(np.log10(ax.get_ylim()[0]),
+            np.log10(ax.get_ylim()[1]), n_yticks)
+    else:
+        yticks = np.linspace(ax.get_ylim()[0], ax.get_ylim()[1], n_yticks)
+    ax.set_yticks(np.round(yticks, 1))
+
 ax.legend()
 ax.set_title(plot_title)
 ax.set_xlabel(plot_xlabel)
