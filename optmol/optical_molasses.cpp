@@ -35,7 +35,8 @@ int main(int argc, char** argv) {
     // Read in parameters
     double rabi_freq_per_decay_rate, initial_detuning_per_decay_rate, 
         final_detuning_per_decay_rate, detuning_ramp_rate_natl_units, initial_temp,
-        dt, duration, n_particles_double, particle_density;
+        dt_by_max_absorb_rate, duration_by_max_absorb_rate, n_particles_double,
+        particle_density;
     load_params(CFG_FILE,
         {
             {"rabi_frequency", &rabi_freq_per_decay_rate},
@@ -43,19 +44,46 @@ int main(int argc, char** argv) {
             {"final_detuning", &final_detuning_per_decay_rate},
             {"detuning_ramp_rate", &detuning_ramp_rate_natl_units},
             {"initial_temperature", &initial_temp},
-            {"time_step", &dt},
-            {"duration", &duration},
+            {"time_step", &dt_by_max_absorb_rate},
+            {"duration", &duration_by_max_absorb_rate},
             {"n_particles", &n_particles_double},
             {"particle_density", &particle_density}
         }
     );
     unsigned n_particles = static_cast<unsigned>(n_particles_double);
 
+    // Defaults and conversion to SI units //
     // Set Rabi frequency and detuning in terms of spontaneous decay rate
     double rabi_freq = rabi_freq_per_decay_rate * decay_rate;
-    double initial_detuning = initial_detuning_per_decay_rate * decay_rate;
+
+    if(isnan(final_detuning_per_decay_rate)) {
+        final_detuning_per_decay_rate = -0.5;   // Gives Doppler temperature
+    }
     double final_detuning = final_detuning_per_decay_rate * decay_rate;
 
+    if(isnan(initial_detuning_per_decay_rate)) {
+        // Gives highest cooling rate at high temperatures
+        initial_detuning_per_decay_rate = optimal_detuning(initial_temp, mass,
+            calc_laser_wavenumber(resonant_wavenumber, final_detuning))
+            / decay_rate;
+    }
+    double initial_detuning = initial_detuning_per_decay_rate * decay_rate;
+    
+    // Set the time scale in terms of max absorption rate
+    double max_absorb_rate = calc_absorb_rate(decay_rate, rabi_freq);
+
+    if(isnan(detuning_ramp_rate_natl_units)) {
+        // Ramp the entire time
+        detuning_ramp_rate_natl_units =
+            (final_detuning_per_decay_rate - initial_detuning_per_decay_rate)
+            / duration_by_max_absorb_rate;
+    }
+    double detuning_ramp_rate = detuning_ramp_rate_natl_units
+        * decay_rate * max_absorb_rate;
+    double dt = dt_by_max_absorb_rate / max_absorb_rate;
+    double duration = duration_by_max_absorb_rate / max_absorb_rate;
+    
+    // Output parameters
     std::cout
         << "Parameters:" << std::endl
         << "    Particle species: " << particle_species << std::endl
@@ -71,8 +99,11 @@ int main(int argc, char** argv) {
         << 2*M_PI/calc_laser_wavenumber(resonant_wavenumber, final_detuning)
              * 1e9 << " nm" << std::endl
         << "    Temperature: " << initial_temp << " K" << std::endl
-        << "    Time step * max absorption rate: " << dt << std::endl
-        << "    Duration * max absorption rate: " << duration << std::endl;
+        << "    Time step * max absorption rate: " << dt_by_max_absorb_rate
+        << std::endl
+        << "    Duration * max absorption rate: " << duration_by_max_absorb_rate
+        << std::endl;
+    // Output useful, theoretically calculated quantities related to optimization
     std::cout << "Optimal initial detuning per decay rate: "
         << optimal_detuning(initial_temp, mass,
             calc_laser_wavenumber(resonant_wavenumber, final_detuning))
@@ -82,16 +113,9 @@ int main(int argc, char** argv) {
         << expected_min_temp(decay_rate, final_detuning) << " K"
         << std::endl;
 
+    // Compute some other useful quantities //
     // Calculate number of time steps for speed
     unsigned n_time_steps = static_cast<unsigned>(ceil(duration / dt));
-
-    // Set the time scale in terms of max absorption rate
-    double max_absorb_rate = calc_absorb_rate(decay_rate, rabi_freq);
-    double detuning_ramp_rate = detuning_ramp_rate_natl_units
-        * decay_rate * max_absorb_rate;
-    dt /= max_absorb_rate;
-    duration /= max_absorb_rate;
-
     // Precompute certain values for the scattering rate
     // So each particle has on average one collision per time step
     unsigned collisions_per_step = n_particles / 2;
@@ -129,7 +153,8 @@ int main(int argc, char** argv) {
 
     // Output files
     std::ostringstream suffix_ss;
-    suffix_ss << "N" << n_particles
+    suffix_ss << std::setprecision(3)
+        << "N" << n_particles
         << "_Density" << particle_density
         << "_Omega" << rabi_freq_per_decay_rate
         << "_Delta" << initial_detuning_per_decay_rate << "to"
