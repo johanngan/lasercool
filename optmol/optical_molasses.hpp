@@ -24,6 +24,11 @@ double calc_avg_kinetic_energy(const std::vector< std::vector<double> >&,
     double);
 // Calculate optical molasses theoretical equilibrium temperature
 double expected_min_temp(double, double);
+// Scatter two particles in a collision
+std::pair< std::vector<double>, std::vector<double> > scatter_pair(
+    const std::vector<double>&, const std::vector<double>&,
+    const std::vector<double>&);
+
 // Tag a file name with some suffix
 std::string tag_filename(std::string, std::string,
     std::string prefix="", std::string separator="_");

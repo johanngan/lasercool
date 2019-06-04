@@ -35,8 +35,7 @@ int main(int argc, char** argv) {
     // Read in parameters
     double rabi_freq_per_decay_rate, initial_detuning_per_decay_rate, 
         final_detuning_per_decay_rate, detuning_ramp_rate_natl_units, initial_temp,
-        dt, duration, n_particles_double;
-    unsigned n_particles;
+        dt, duration, n_particles_double, collisions_per_step_double;
     load_params(CFG_FILE,
         {
             {"rabi_frequency", &rabi_freq_per_decay_rate},
@@ -46,10 +45,13 @@ int main(int argc, char** argv) {
             {"initial_temperature", &initial_temp},
             {"time_step", &dt},
             {"duration", &duration},
-            {"n_particles", &n_particles_double}
+            {"n_particles", &n_particles_double},
+            {"collisions_per_step", &collisions_per_step_double}
         }
     );
-    n_particles = static_cast<unsigned>(n_particles_double);
+    unsigned n_particles = static_cast<unsigned>(n_particles_double);
+    unsigned collisions_per_step = 
+        static_cast<unsigned>(collisions_per_step_double);
 
     // Set Rabi frequency and detuning in terms of spontaneous decay rate
     double rabi_freq = rabi_freq_per_decay_rate * decay_rate;
@@ -149,6 +151,7 @@ int main(int argc, char** argv) {
 
     // [0, 1) uniform distribution
     std::uniform_real_distribution<> uniform_dist;
+    std::uniform_int_distribution<> uniform_idx_dist(0, n_particles-1);
     // Run over each time step
     for(unsigned i = 0; i < n_time_steps; ++i) {
         // Ramped detuning and photon wavenumber
@@ -202,6 +205,31 @@ int main(int argc, char** argv) {
             // Insert the desired measurement calculations //
         }
         // Insert the desired measurement calculations //
+
+        // Scatter some number of particles if possible
+        if(n_particles > 1) {
+            for(unsigned i_scat = 0; i_scat < collisions_per_step; ++i_scat) {
+                // Choose two particles to scatter
+                unsigned idx1 = uniform_idx_dist(generator);
+                unsigned idx2;
+                // Make sure they're two different particles
+                do {
+                    idx2 = uniform_idx_dist(generator);
+                } while(idx1 == idx2);
+
+                // Get a random direction for scattering
+                double cos_theta = 2*uniform_dist(generator) - 1;
+                double phi = 2*M_PI*uniform_dist(generator);
+                double sin_theta = sqrt(1 - sqr(cos_theta));
+                std::vector<double> rand_dir{
+                    sin_theta*cos(phi), sin_theta*sin(phi), cos_theta};
+                
+                auto scattered_vels = scatter_pair(
+                    v_particles[idx1], v_particles[idx2], rand_dir);
+                v_particles[idx1] = scattered_vels.first;
+                v_particles[idx2] = scattered_vels.second;
+            }
+        }
 
         // Average kinetic energy
         if((i+1) % steps_between_snapshots == 0) {
@@ -262,6 +290,23 @@ double calc_avg_kinetic_energy(const std::vector< std::vector<double> >& velocit
 
 double expected_min_temp(double decay_rate, double detuning) {
     return -0.125*HBAR/K_BOLTZMANN * (sqr(decay_rate) + 4*sqr(detuning))/detuning;
+}
+
+std::pair< std::vector<double>, std::vector<double> > scatter_pair(
+    const std::vector<double>& v1, const std::vector<double>& v2,
+    const std::vector<double>& rand_dir) {
+    // Relative speed
+    double rel_speed = sqrt(
+        sqr(v1[0]-v2[0]) + sqr(v1[1]-v2[1]) + sqr(v1[2]-v2[2]));
+    
+    std::vector<double> new_v1, new_v2;
+    new_v1.reserve(v1.size());
+    new_v2.reserve(v2.size());
+    for(unsigned i = 0; i < v1.size(); ++i) {
+        new_v1.push_back((v1[i] + v2[i] + rel_speed*rand_dir[i]) / 2);
+        new_v2.push_back((v1[i] + v2[i] - rel_speed*rand_dir[i]) / 2);
+    }
+    return std::make_pair(new_v1, new_v2);
 }
 
 std::string tag_filename(std::string filename, std::string suffix,
