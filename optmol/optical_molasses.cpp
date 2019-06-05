@@ -4,6 +4,7 @@ const std::string CFG_FILE = "params.cfg";
 const std::string OUTPUT_DIR = "output";
 const std::string ENERGY_OUTFILEBASE = "avgKE.out";
 const std::string SPEED_DISTR_OUTFILEBASE = "speed_distr.out";
+const unsigned OUTFILE_PRECISION = 3;
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -95,6 +96,8 @@ int main(int argc, char** argv) {
         << initial_detuning_per_decay_rate << std::endl
         << "    Final detuning per decay rate: "
         << final_detuning_per_decay_rate << std::endl
+        << "    Detuning ramp rate * max absorption rate / decay rate: "
+        << detuning_ramp_rate_natl_units << std::endl
         << "    Final laser wavelength: "
         << 2*M_PI/calc_laser_wavenumber(resonant_wavenumber, final_detuning)
              * 1e9 << " nm" << std::endl
@@ -153,7 +156,7 @@ int main(int argc, char** argv) {
 
     // Output files
     std::ostringstream suffix_ss;
-    suffix_ss << std::setprecision(3)
+    suffix_ss << std::setprecision(OUTFILE_PRECISION)
         << "N" << n_particles
         << "_Density" << particle_density
         << "_Omega" << rabi_freq_per_decay_rate
