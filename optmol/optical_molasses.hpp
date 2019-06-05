@@ -13,6 +13,7 @@
 #include "constants.hpp"
 #include "mathutil.hpp"
 #include "PhysicalParams.hpp"
+#include "RandProcesses.hpp"
 #include "pcg_random.hpp"
 
 // Calculate a ramped quantity over time given the initial and final values,

@@ -22,29 +22,30 @@ int main(int argc, char** argv) {
     // Print out the params
     params.print();
 
+    // Thermal velocity standard deviation of velocity components is sqrt(kT/m)
+    double thermal_v_stddev = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
+
+    // Initialize randomizer object with generator, thermal stddev,
+    // and particle number
     // Set up RNG
     pcg32 generator(pcg_extras::seed_seq_from<std::random_device>{});
     // std::mt19937 generator(std::random_device{}());
-
-    // Initialize particles to a thermal distribution
-    // Gaussian in each velocity component, with mean 0 and
-    // standard deviation sqrt(kT/m)
-    double mean = 0, stddev = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
-    std::normal_distribution<> normal_dist(mean, stddev);
+    RandProcesses<pcg32> rng(generator, thermal_v_stddev, params.n_particles);
+    
+    // Initialize velocities to thermal distribution
     std::vector< std::vector<double> > v_particles(params.n_particles,
         std::vector<double>(3));
     for(auto i = v_particles.begin(); i != v_particles.end(); ++i) {
         for(auto vi = i->begin(); vi != i->end(); ++vi) {
-            *vi = normal_dist(generator);
+            *vi = rng.rand_thermal_velocity();
         }
     }
-
     /// For output consistency with a single particle, force to have exactly
     /// the thermal energy
     if(params.n_particles == 1) {
-        v_particles.back()[0] = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
-        v_particles.back()[1] = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
-        v_particles.back()[2] = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
+        v_particles.back()[0] = thermal_v_stddev;
+        v_particles.back()[1] = thermal_v_stddev;
+        v_particles.back()[2] = thermal_v_stddev;
     }
     ///
 
@@ -86,9 +87,6 @@ int main(int argc, char** argv) {
     unsigned long n_collisions = 0;
     ///
 
-    // [0, 1) uniform distribution
-    std::uniform_real_distribution<> uniform_dist;
-    std::uniform_int_distribution<> uniform_idx_dist(0, params.n_particles-1);
     // Run over each time step
     for(unsigned i = 0; i < params.n_time_steps; ++i) {
         // Ramped detuning and photon wavenumber
@@ -116,8 +114,8 @@ int main(int argc, char** argv) {
                     params.decay_rate, params.rabi_freq, doppler_detuning);
 
                 // Decide whether or not to absorb a photon
-                if(uniform_dist(generator) >=
-                    absorb_rate*params.dt - sqr(absorb_rate*params.dt)/2) {
+                if(!rng.rand_success_with_prob(
+                    absorb_rate*params.dt - sqr(absorb_rate*params.dt)/2)) {
                     continue;
                 }
 
@@ -131,8 +129,8 @@ int main(int argc, char** argv) {
                 // Absorption kick
                 (*vp)[component] += direction*v_kick;
                 // Get a random direction for emission
-                double cos_theta = 2*uniform_dist(generator) - 1;
-                double phi = 2*M_PI*uniform_dist(generator);
+                double cos_theta, phi;
+                std::tie(cos_theta, phi) = rng.rand_dir();
                 double sin_theta = sqrt(1 - sqr(cos_theta));
                 
                 // Emission kick
@@ -156,39 +154,34 @@ int main(int argc, char** argv) {
         if(params.n_particles > 1 && params.scatter_coeff > 0) {
             for(unsigned i_scat = 0; i_scat < params.collisions_per_step; ++i_scat) {
                 // Choose two particles to scatter
-                unsigned idx1 = uniform_idx_dist(generator);
-                unsigned idx2;
-                // Make sure they're two different particles
-                do {
-                    idx2 = uniform_idx_dist(generator);
-                } while(idx1 == idx2);
+                auto idxs = rng.rand_idx_pair();
 
                 // Decide whether to scatter or not
                 double rel_speed = calc_rel_speed(
-                    v_particles[idx1], v_particles[idx2]);
+                    v_particles[idxs.first], v_particles[idxs.second]);
                 // 1+ to keep the argument above 1
                 double coulomb_log = log(1 + 12*M_PI/cube(ELEMENTARY_CHARGE)
                     * sqrt(8*cube(VACUUM_PERMITTIVITY*avgKE)/(27*params.particle_density)));
                 double scatter_prob = params.scatter_coeff*coulomb_log*params.dt
                     /cube(rel_speed);
 
-                if(uniform_dist(generator) >= scatter_prob) {
+                if(!rng.rand_success_with_prob(scatter_prob)) {
                     continue;
                 }
                 n_collisions += 1;
 
                 // Carry on with scattering the pair
                 // Get a random direction for scattering
-                double cos_theta = 2*uniform_dist(generator) - 1;
-                double phi = 2*M_PI*uniform_dist(generator);
+                double cos_theta, phi;
+                std::tie(cos_theta, phi) = rng.rand_dir();
                 double sin_theta = sqrt(1 - sqr(cos_theta));
-                std::vector<double> rand_dir{
-                    sin_theta*cos(phi), sin_theta*sin(phi), cos_theta};
                 
                 auto scattered_vels = scatter_pair(
-                    v_particles[idx1], v_particles[idx2], rand_dir);
-                v_particles[idx1] = scattered_vels.first;
-                v_particles[idx2] = scattered_vels.second;
+                    v_particles[idxs.first], v_particles[idxs.second],
+                    {sin_theta*cos(phi), sin_theta*sin(phi), cos_theta}
+                    );
+                v_particles[idxs.first] = scattered_vels.first;
+                v_particles[idxs.second] = scattered_vels.second;
             }
         }
     }

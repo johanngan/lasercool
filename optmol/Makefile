@@ -9,7 +9,7 @@ SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 EXEC = optical_molasses
 
-$(EXEC): $(OBJS) mathutil.hpp
+$(EXEC): $(OBJS) mathutil.hpp RandProcesses.hpp
 	$(LD) $(LFLAGS) $(OBJS) $(LPATHS) $(LIBS) -o $@
 
 .cpp.o:
