@@ -9,28 +9,18 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <algorithm>
 #include "constants.hpp"
-#include "read_config.hpp"
+#include "mathutil.hpp"
+#include "PhysicalParams.hpp"
 #include "pcg_random.hpp"
 
-// Square a number
-double sqr(double);
-// Cube a number
-double cube(double);
-// Calculate the absorption rate of photons
-double calc_absorb_rate(double, double, double detuning=0);
-// Calculate the ramped detuning
+// Calculate a ramped quantity over time given the initial and final values,
+// and the ramp rate
 double calc_ramp(double, double, double, double);
-// Calculate the laser light wavenumber
-double calc_laser_wavenumber(double, double);
 // Calculate average kinetic energy of an ensemble
 double calc_avg_kinetic_energy(const std::vector< std::vector<double> >&,
     double);
-// Calculate optical molasses theoretical equilibrium temperature
-double expected_min_temp(double, double);
-// Calculate detuning with the highest theoretical cooling rate in the high
-// temperature limit
-double optimal_detuning(double, double, double); 
 // Compute the relative speed between two particles
 double calc_rel_speed(const std::vector<double>&, const std::vector<double>&);
 // Scatter two particles in a collision

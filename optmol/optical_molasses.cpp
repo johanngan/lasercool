@@ -4,7 +4,7 @@ const std::string CFG_FILE = "params.cfg";
 const std::string OUTPUT_DIR = "output";
 const std::string ENERGY_OUTFILEBASE = "avgKE.out";
 const std::string SPEED_DISTR_OUTFILEBASE = "speed_distr.out";
-const unsigned OUTFILE_PRECISION = 3;
+const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -13,120 +13,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Particle species string
+    // Get params
+    // Accepted particle species strings:
     // "BePlus"
     // "Rb"
-    std::string particle_species(argv[1]);
-
-    // Resonant wavenumber is the wavenumber of the atomic transition
-    double mass, decay_rate, resonant_wavenumber;
-    if(particle_species == "BePlus") {
-        mass = MASS_BE_PLUS;
-        decay_rate = DECAY_RATE_BE_PLUS;
-        resonant_wavenumber = WAVENUMBER_BE_2S2P;
-    } else if(particle_species == "Rb") {
-        mass = MASS_RB;
-        decay_rate = DECAY_RATE_RB;
-        resonant_wavenumber = WAVENUMBER_RB;
-    } else {
-        std::cout << "ERROR: Invalid particle species." << std::endl;
-        return 1;
-    }
-
-    // Read in parameters
-    double rabi_freq_per_decay_rate, initial_detuning_per_decay_rate, 
-        final_detuning_per_decay_rate, detuning_ramp_rate_natl_units, initial_temp,
-        dt_by_max_absorb_rate, duration_by_max_absorb_rate, n_particles_double,
-        particle_density;
-    load_params(CFG_FILE,
-        {
-            {"rabi_frequency", &rabi_freq_per_decay_rate},
-            {"initial_detuning", &initial_detuning_per_decay_rate},
-            {"final_detuning", &final_detuning_per_decay_rate},
-            {"detuning_ramp_rate", &detuning_ramp_rate_natl_units},
-            {"initial_temperature", &initial_temp},
-            {"time_step", &dt_by_max_absorb_rate},
-            {"duration", &duration_by_max_absorb_rate},
-            {"n_particles", &n_particles_double},
-            {"particle_density", &particle_density}
-        }
-    );
-    unsigned n_particles = static_cast<unsigned>(n_particles_double);
-
-    // Defaults and conversion to SI units //
-    // Set Rabi frequency and detuning in terms of spontaneous decay rate
-    double rabi_freq = rabi_freq_per_decay_rate * decay_rate;
-
-    if(isnan(final_detuning_per_decay_rate)) {
-        final_detuning_per_decay_rate = -0.5;   // Gives Doppler temperature
-    }
-    double final_detuning = final_detuning_per_decay_rate * decay_rate;
-
-    if(isnan(initial_detuning_per_decay_rate)) {
-        // Gives highest cooling rate at high temperatures
-        initial_detuning_per_decay_rate = optimal_detuning(initial_temp, mass,
-            calc_laser_wavenumber(resonant_wavenumber, final_detuning))
-            / decay_rate;
-    }
-    double initial_detuning = initial_detuning_per_decay_rate * decay_rate;
+    PhysicalParams params(std::string(argv[1]), CFG_FILE);
     
-    // Set the time scale in terms of max absorption rate
-    double max_absorb_rate = calc_absorb_rate(decay_rate, rabi_freq);
-
-    if(isnan(detuning_ramp_rate_natl_units)) {
-        // Ramp the entire time
-        detuning_ramp_rate_natl_units =
-            (final_detuning_per_decay_rate - initial_detuning_per_decay_rate)
-            / duration_by_max_absorb_rate;
-    }
-    double detuning_ramp_rate = detuning_ramp_rate_natl_units
-        * decay_rate * max_absorb_rate;
-    double dt = dt_by_max_absorb_rate / max_absorb_rate;
-    double duration = duration_by_max_absorb_rate / max_absorb_rate;
-    
-    // Output parameters
-    std::cout
-        << "Parameters:" << std::endl
-        << "    Particle species: " << particle_species << std::endl
-        << "    N: " << n_particles << std::endl
-        << "    Density: " << particle_density << std::endl
-        << "    Rabi frequency per decay rate: " << rabi_freq_per_decay_rate
-        << std::endl
-        << "    Initial detuning per decay rate: "
-        << initial_detuning_per_decay_rate << std::endl
-        << "    Final detuning per decay rate: "
-        << final_detuning_per_decay_rate << std::endl
-        << "    Detuning ramp rate * max absorption rate / decay rate: "
-        << detuning_ramp_rate_natl_units << std::endl
-        << "    Final laser wavelength: "
-        << 2*M_PI/calc_laser_wavenumber(resonant_wavenumber, final_detuning)
-             * 1e9 << " nm" << std::endl
-        << "    Temperature: " << initial_temp << " K" << std::endl
-        << "    Time step * max absorption rate: " << dt_by_max_absorb_rate
-        << std::endl
-        << "    Duration * max absorption rate: " << duration_by_max_absorb_rate
-        << std::endl;
-    // Output useful, theoretically calculated quantities related to optimization
-    std::cout << "Optimal initial detuning per decay rate: "
-        << optimal_detuning(initial_temp, mass,
-            calc_laser_wavenumber(resonant_wavenumber, final_detuning))
-            / decay_rate
-        << std::endl
-        << "Expected optical molasses equilibrium temperature: "
-        << expected_min_temp(decay_rate, final_detuning) << " K"
-        << std::endl;
-
-    // Compute some other useful quantities //
-    // Calculate number of time steps for speed
-    unsigned n_time_steps = static_cast<unsigned>(ceil(duration / dt));
-    // Precompute certain values for the scattering rate
-    // So each particle has on average one collision per time step
-    unsigned collisions_per_step = n_particles / 2;
-    // Unchanging coefficient on the scattering probability, where
-    // P(scatter in interval dt) = coeff*(coulomb log)*dt/(relative speed)^3
-    // See http://www.physics.purdue.edu/~robichf/papers/PoP10_2217.pdf
-    double scatter_coeff = particle_density*pow(ELEMENTARY_CHARGE, 4)
-        / (M_PI*sqr(VACUUM_PERMITTIVITY*mass));
+    // Print out the params
+    params.print();
 
     // Set up RNG
     pcg32 generator(pcg_extras::seed_seq_from<std::random_device>{});
@@ -135,9 +29,9 @@ int main(int argc, char** argv) {
     // Initialize particles to a thermal distribution
     // Gaussian in each velocity component, with mean 0 and
     // standard deviation sqrt(kT/m)
-    double mean = 0, stddev = sqrt(K_BOLTZMANN*initial_temp/mass);
+    double mean = 0, stddev = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
     std::normal_distribution<> normal_dist(mean, stddev);
-    std::vector< std::vector<double> > v_particles(n_particles,
+    std::vector< std::vector<double> > v_particles(params.n_particles,
         std::vector<double>(3));
     for(auto i = v_particles.begin(); i != v_particles.end(); ++i) {
         for(auto vi = i->begin(); vi != i->end(); ++vi) {
@@ -147,37 +41,37 @@ int main(int argc, char** argv) {
 
     /// For output consistency with a single particle, force to have exactly
     /// the thermal energy
-    if(n_particles == 1) {
-        v_particles.back()[0] = sqrt(K_BOLTZMANN*initial_temp/mass);
-        v_particles.back()[1] = sqrt(K_BOLTZMANN*initial_temp/mass);
-        v_particles.back()[2] = sqrt(K_BOLTZMANN*initial_temp/mass);
+    if(params.n_particles == 1) {
+        v_particles.back()[0] = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
+        v_particles.back()[1] = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
+        v_particles.back()[2] = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
     }
     ///
 
     // Output files
     std::ostringstream suffix_ss;
-    suffix_ss << std::setprecision(OUTFILE_PRECISION)
-        << "N" << n_particles
-        << "_Density" << particle_density
-        << "_Omega" << rabi_freq_per_decay_rate
-        << "_Delta" << initial_detuning_per_decay_rate << "to"
-        << final_detuning_per_decay_rate
-        << "_RampRate" << detuning_ramp_rate_natl_units
-        << "_Temp" << initial_temp;
+    suffix_ss << std::setprecision(OUTFILENAME_PRECISION)
+        << "N" << params.n_particles
+        << "_Density" << params.particle_density
+        << "_Omega" << params.rabi_freq_per_decay_rate
+        << "_Delta" << params.initial_detuning_per_decay_rate << "to"
+        << params.final_detuning_per_decay_rate
+        << "_RampRate" << params.detuning_ramp_rate_natl_units
+        << "_Temp" << params.initial_temp;
 
     std::ofstream energy_outfile(OUTPUT_DIR + "/" + tag_filename(
-        ENERGY_OUTFILEBASE, suffix_ss.str(), particle_species));
+        ENERGY_OUTFILEBASE, suffix_ss.str(), params.particle_species));
     // Number of energy snapshots to take
     unsigned n_snapshots = 1001;
-    unsigned steps_between_snapshots = n_time_steps / (n_snapshots - 1);
+    unsigned steps_between_snapshots = params.n_time_steps / (n_snapshots - 1);
     // Initial average kinetic energy
     energy_outfile << 0 << " "
-        << calc_avg_kinetic_energy(v_particles, mass)/K_BOLTZMANN;
+        << calc_avg_kinetic_energy(v_particles, params.mass)/K_BOLTZMANN;
 
     // Initial speed distribution
     std::ofstream speed_init_outfile(OUTPUT_DIR + "/" + tag_filename(
         tag_filename(SPEED_DISTR_OUTFILEBASE, "initial"),
-        suffix_ss.str(), particle_species));
+        suffix_ss.str(), params.particle_species));
     for(auto vp: v_particles) {
         speed_init_outfile << sqrt(sqr(vp[0]) + sqr(vp[1]) + sqr(vp[2]))
             << " ";
@@ -194,16 +88,17 @@ int main(int argc, char** argv) {
 
     // [0, 1) uniform distribution
     std::uniform_real_distribution<> uniform_dist;
-    std::uniform_int_distribution<> uniform_idx_dist(0, n_particles-1);
+    std::uniform_int_distribution<> uniform_idx_dist(0, params.n_particles-1);
     // Run over each time step
-    for(unsigned i = 0; i < n_time_steps; ++i) {
+    for(unsigned i = 0; i < params.n_time_steps; ++i) {
         // Ramped detuning and photon wavenumber
-        double detuning = calc_ramp((i+1)*dt,
-            initial_detuning, final_detuning, detuning_ramp_rate);
-        double laser_wavenumber = calc_laser_wavenumber(
-            resonant_wavenumber, detuning);
+        double detuning = calc_ramp((i+1)*params.dt,
+            params.initial_detuning, params.final_detuning,
+            params.detuning_ramp_rate);
+        double laser_wavenumber = PhysicalParams::calc_laser_wavenumber(
+            params.resonant_wavenumber, detuning);
         // velocity kick from a single photon absorption/emission
-        double v_kick = HBAR*laser_wavenumber / mass;
+        double v_kick = HBAR*laser_wavenumber / params.mass;
 
         // Run over each particle
         for(auto vp = v_particles.begin(); vp != v_particles.end(); ++vp) {
@@ -217,12 +112,12 @@ int main(int argc, char** argv) {
                 // Doppler-shifted detuning
                 double doppler_detuning = detuning
                     - direction*laser_wavenumber*(*vp)[component];
-                double absorb_rate = calc_absorb_rate(decay_rate,
-                    rabi_freq, doppler_detuning);
+                double absorb_rate = PhysicalParams::calc_absorb_rate(
+                    params.decay_rate, params.rabi_freq, doppler_detuning);
 
                 // Decide whether or not to absorb a photon
                 if(uniform_dist(generator) >=
-                    absorb_rate*dt - sqr(absorb_rate*dt)/2) {
+                    absorb_rate*params.dt - sqr(absorb_rate*params.dt)/2) {
                     continue;
                 }
 
@@ -251,15 +146,15 @@ int main(int argc, char** argv) {
         // Average kinetic energy
         // Note that scattering particles conserves kinetic energy,
         // so it doesn't have to be recomputed later
-        double avgKE = calc_avg_kinetic_energy(v_particles, mass);
+        double avgKE = calc_avg_kinetic_energy(v_particles, params.mass);
         if((i+1) % steps_between_snapshots == 0) {
-            energy_outfile << std::endl << (i+1)*dt << " " <<
+            energy_outfile << std::endl << (i+1)*params.dt << " " <<
                 avgKE/K_BOLTZMANN;
         }
 
         // Scatter some number of particles if possible
-        if(n_particles > 1 && scatter_coeff > 0) {
-            for(unsigned i_scat = 0; i_scat < collisions_per_step; ++i_scat) {
+        if(params.n_particles > 1 && params.scatter_coeff > 0) {
+            for(unsigned i_scat = 0; i_scat < params.collisions_per_step; ++i_scat) {
                 // Choose two particles to scatter
                 unsigned idx1 = uniform_idx_dist(generator);
                 unsigned idx2;
@@ -273,8 +168,9 @@ int main(int argc, char** argv) {
                     v_particles[idx1], v_particles[idx2]);
                 // 1+ to keep the argument above 1
                 double coulomb_log = log(1 + 12*M_PI/cube(ELEMENTARY_CHARGE)
-                    * sqrt(8*cube(VACUUM_PERMITTIVITY*avgKE)/(27*particle_density)));
-                double scatter_prob = scatter_coeff*coulomb_log*dt/cube(rel_speed);
+                    * sqrt(8*cube(VACUUM_PERMITTIVITY*avgKE)/(27*params.particle_density)));
+                double scatter_prob = params.scatter_coeff*coulomb_log*params.dt
+                    /cube(rel_speed);
 
                 if(uniform_dist(generator) >= scatter_prob) {
                     continue;
@@ -301,7 +197,7 @@ int main(int argc, char** argv) {
     // Final speed distribution
     std::ofstream speed_final_outfile(OUTPUT_DIR + "/" + tag_filename(
         tag_filename(SPEED_DISTR_OUTFILEBASE, "final"),
-        suffix_ss.str(), particle_species));
+        suffix_ss.str(), params.particle_species));
     for(auto vp: v_particles) {
         speed_final_outfile << sqrt(sqr(vp[0]) + sqr(vp[1]) + sqr(vp[2]))
             << " ";
@@ -314,37 +210,19 @@ int main(int argc, char** argv) {
     std::cout << "Number of heating events: " << n_heat << std::endl
         << "Number of cooling events: " << n_cool << std::endl;
     std::cout << "Average collision success rate per time step: "
-        << static_cast<double>(n_collisions)/(collisions_per_step*n_time_steps)
+        << static_cast<double>(n_collisions)
+            /(params.collisions_per_step*params.n_time_steps)
         << std::endl;
     std::cout << "Collision rate/max absorption rate: "
-        << n_collisions / (duration*max_absorb_rate) << std::endl;
+        << n_collisions / (params.duration_by_max_absorb_rate) << std::endl;
     ///
 }
 
-double sqr(double x) {
-    return x*x;
-}
-
-double cube(double x) {
-    return x*x*x;
-}
-
-double calc_absorb_rate(double decay_rate, double rabi_freq, double detuning) {
-    return 0.25*decay_rate*sqr(rabi_freq)
-        / (sqr(detuning) + 0.5*sqr(rabi_freq) + 0.25*sqr(decay_rate));
-}
-
 double calc_ramp(double t, double init, double final, double rate) {
-    double min_val = std::min(init, final);
-    double max_val = std::max(init, final);
-    return std::max(min_val,
-        std::min(max_val,
+    return std::max(std::min(init, final),
+        std::min(std::max(init, final),
             init + rate*t
         ));
-}
-
-double calc_laser_wavenumber(double resonant_wavenumber, double detuning) {
-    return resonant_wavenumber + detuning/SPEED_OF_LIGHT;
 }
 
 double calc_avg_kinetic_energy(const std::vector< std::vector<double> >& velocities,
@@ -354,14 +232,6 @@ double calc_avg_kinetic_energy(const std::vector< std::vector<double> >& velocit
         sumKE += 0.5*mass*(sqr(v[0]) + sqr(v[1]) + sqr(v[2]));
     }
     return sumKE / velocities.size();
-}
-
-double expected_min_temp(double decay_rate, double detuning) {
-    return -0.125*HBAR/K_BOLTZMANN * (sqr(decay_rate) + 4*sqr(detuning))/detuning;
-}
-
-double optimal_detuning(double temp, double mass, double wavenumber) {
-    return -wavenumber * sqrt(K_BOLTZMANN*temp/mass);
 }
 
 double calc_rel_speed(
