@@ -1,7 +1,7 @@
 CC = g++
 AR = ar
 ARFLAGS = rvs
-CFLAGS = -c -std=c++11 -O2 -Wall -Wextra
+CFLAGS = -c -std=c++14 -O3 -Wall -Wextra
 SRC = read_config.cpp
 OBJ = $(SRC:.cpp=.o)
 TARGET = libreadcfg.a

@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -c -std=c++11 -O3 -flto -Wall -Wextra
+CFLAGS = -c -std=c++14 -O3 -flto -Wall -Wextra
 INCS = -I../lib -I../vendor/pcg-cpp-0.98/include
 LPATHS = -L../lib
 LIBS = -lm -lreadcfg

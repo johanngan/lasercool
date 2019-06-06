@@ -2,7 +2,7 @@ CC = g++
 INCS = -I..
 LPATHS = -L..
 LIBS = -lreadcfg
-CFLAGS = -c -std=c++11 -O2 -Wall -Wextra
+CFLAGS = -c -std=c++14 -O3 -Wall -Wextra
 LD = g++
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
@@ -13,7 +13,10 @@ all: $(EXECS)
 $(EXECS): %: %.o
 	$(LD) $(LFLAGS) $< $(LPATHS) $(LIBS) -o $@
 
-.cpp.o:
+test_config.o: test_config.cpp
+	$(CC) $(CFLAGS) $(INCS) $< -o $@
+
+test_timestepping.o: test_timestepping.cpp ../timestepping.hpp
 	$(CC) $(CFLAGS) $(INCS) $< -o $@
 
 clean:
