@@ -9,7 +9,7 @@ In this simulation, the atoms are assumed to emit absorbed photons in a random d
 
 # Simulation details
 ## Absorption and emission
-Absorption and re-emission is assumed to be fast, so if an absorption event occurs, re-emission happens instantaneously (same time step). Absorption probability is computed from the known formula and the Doppler-shifted detuning. Emission happens in a random direction on the unit sphere.
+Six lasers are shone on the atoms, one in each Cartesian direction (forward and backward). Absorption and re-emission is assumed to be fast, so if an absorption event occurs, re-emission happens instantaneously (same time step). Absorption probability is computed from the known formula and the Doppler-shifted detuning. Emission happens in a random direction on the unit sphere.
 
 ## Detuning ramp
 The simulation allows for the detuning to be linearly ramped over time. Set the initial and final detuning values, and the rate (slope) of the ramp. For constant detuning, either set the initial and final values to be the same, or set the ramp rate to be zero.
