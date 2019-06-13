@@ -9,11 +9,15 @@
 // Two-level Hamiltonian for sawtooth laser frequency oscillating about
 // some transition frequency, under the rotating wave approximation
 struct HSawtoothRotWave {
+    const unsigned nstates; // "matrix dimension"
     double rabi_freq_per_decay, detun_amp_per_decay, detun_freq_per_decay;
     double rabi_switch_coeff, rabi_switch_power;
     double transition_angfreq_per_decay;
 
     HSawtoothRotWave(std::string);
+    // Convert matrix subscripts to linear indexes (row-major format)
+    unsigned subidx(unsigned, unsigned);
+
     // Rabi frequency soft switch on/off at a given (decay rate)*time
     // starting from 0 at gamma*t = 0 (mod gamma/f)
     double rabi_softswitch(double);
