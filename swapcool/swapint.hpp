@@ -1,5 +1,5 @@
-#ifndef SWAPLASER_HPP_
-#define SWAPLASER_HPP_
+#ifndef SWAPINT_HPP_
+#define SWAPINT_HPP_
 
 #include <cmath>
 #include <iomanip>
@@ -7,7 +7,7 @@
 #include <fstream>
 #include <complex>
 #include "read_config.hpp"
-#include "HSawtoothRotWave.hpp"
+#include "HInt.hpp"
 #include "timestepping.hpp"
 
 #endif

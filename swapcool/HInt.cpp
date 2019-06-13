@@ -1,8 +1,8 @@
-#include "HSawtoothRotWave.hpp"
+#include "HInt.hpp"
 using namespace std::complex_literals;
 const double HBAR = 1.054571800e-34;
 
-HSawtoothRotWave::HSawtoothRotWave(std::string fname):nstates(3) {
+HInt::HInt(std::string fname):nstates(3) {
     double decay_rate, low_energy, high_energy;
     load_params(fname,
         {
@@ -21,22 +21,22 @@ HSawtoothRotWave::HSawtoothRotWave(std::string fname):nstates(3) {
     transition_angfreq_per_decay = (high_energy - low_energy)/(HBAR*decay_rate);
 }
 
-unsigned HSawtoothRotWave::subidx(unsigned i, unsigned j) {
+unsigned HInt::subidx(unsigned i, unsigned j) {
     return nstates*i + j;
 }
 
-double HSawtoothRotWave::rabi_softswitch(double gt) {
+double HInt::rabi_softswitch(double gt) {
     double _;
     return rabi_freq_per_decay*std::exp(-rabi_switch_coeff*std::pow(
         std::abs(2*modf(detun_freq_per_decay*gt, &_) - 1), rabi_switch_power));
 }
 
-double HSawtoothRotWave::detun_per_decay(double gt) {
+double HInt::detun_per_decay(double gt) {
     double _;
     return detun_amp_per_decay * (2*modf(detun_freq_per_decay*gt, &_) - 1);
 }
 
-double HSawtoothRotWave::cumulative_phase(double gt) {
+double HInt::cumulative_phase(double gt) {
     double ncycles;
     double cycle_completion = modf(gt*detun_freq_per_decay, &ncycles);
     // Phase from full cycles + the phase from the current one
@@ -47,7 +47,7 @@ double HSawtoothRotWave::cumulative_phase(double gt) {
         ) / detun_freq_per_decay;
 }
 
-std::vector<std::complex<double>> HSawtoothRotWave::density_matrix(
+std::vector<std::complex<double>> HInt::density_matrix(
     double gt, const std::vector<std::complex<double>>& coefficients) {
     std::complex<double> cexp = std::exp(1i*cumulative_phase(gt));
     return {
@@ -64,7 +64,7 @@ std::vector<std::complex<double>> HSawtoothRotWave::density_matrix(
 }
 
 // Assumes row major format
-std::vector<std::complex<double>> HSawtoothRotWave::operator()(double gt,
+std::vector<std::complex<double>> HInt::operator()(double gt,
     const std::vector<std::complex<double>>& rho_c) {
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     return {

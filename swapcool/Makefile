@@ -7,13 +7,13 @@ LD = g++
 LFLAGS = -O3 -flto
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
-TARGET = swaplaser
+TARGETS = swapint
 
-$(TARGET): $(OBJS)
-	$(LD) $(LFLAGS) $(OBJS) $(LPATHS) $(LIBS) -o $@
+swapint: swapint.o HInt.o
+	$(LD) $(LFLAGS) $^ $(LPATHS) $(LIBS) -o $@
 
 .cpp.o:
 	$(CC) $(CFLAGS) $(INCS) $< -o $@
 
 clean:
-	rm -rf $(OBJS) $(TARGET)
+	rm -rf $(OBJS) $(TARGETS)

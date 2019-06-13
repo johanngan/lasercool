@@ -1,8 +1,9 @@
+// SWAP laser setup only considering internal states, without particle motion
 // The density matrix is stored in row major format.
-#include "swaplaser.hpp"
+#include "swapint.hpp"
 
 const std::string DEFAULT_CFG_FILE = "params.cfg";
-const std::string OUTFILEBASE = "output/rho_swaplaser.out";
+const std::string OUTFILEBASE = "output/rho_swapint.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -23,7 +24,7 @@ int main(int argc, char** argv) {
 
     // Form the derivative operator, in natural units
     // d(rho)/d(Gamma*t)
-    HSawtoothRotWave hamil(cfg_file);
+    HInt hamil(cfg_file);
 
     std::ofstream cyclesout("cycles.out");
     for(double gt = 0; gt < duration_by_decay; gt += 1e-3) {
