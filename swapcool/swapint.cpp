@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     // Column order is t, |rho11|, |rho22|
     std::ofstream outfile(ofname);
     // Write table header
-    outfile << "t |rho11| |rho22|" << std::endl;
+    outfile << "t |rho11| |rho22| |rho33|" << std::endl;
     for(auto point: rho_c_solution) {
         // Convert rho_c (rotating wave coefficients) to rho
         auto rho = hamil.density_matrix(point.first, point.second);
