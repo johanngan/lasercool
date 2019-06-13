@@ -61,11 +61,15 @@ std::vector<std::complex<double>> HSawtoothRotWave::operator()(double gt,
     const std::vector<std::complex<double>>& rho_c) {
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     return {
-        rho_c[subidx(1,1)] + 0.5i*rabi_softswitch(gt)*(rho_c[subidx(0,1)]-rho_c[subidx(1,0)]),
-        -0.5*rho_c[subidx(0,1)] + 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(0,0)]-rho_c[subidx(1,1)])
+        rho_c[subidx(1,1)]
+            + 0.5i*rabi_softswitch(gt)*(rho_c[subidx(0,1)]-rho_c[subidx(1,0)]),
+        -0.5*rho_c[subidx(0,1)]
+            + 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(0,0)]-rho_c[subidx(1,1)])
             - detun_per_decay(gt)*rho_c[subidx(0,1)]),
-        -0.5*rho_c[subidx(1,0)] - 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(0,0)]-rho_c[subidx(1,1)])
+        -0.5*rho_c[subidx(1,0)]
+            - 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(0,0)]-rho_c[subidx(1,1)])
             - detun_per_decay(gt)*rho_c[subidx(1,0)]),
-        -rho_c[subidx(1,1)] - 0.5i*rabi_softswitch(gt)*(rho_c[subidx(0,1)]-rho_c[subidx(1,0)])
+        -rho_c[subidx(1,1)]
+            - 0.5i*rabi_softswitch(gt)*(rho_c[subidx(0,1)]-rho_c[subidx(1,0)])
     };
 }
