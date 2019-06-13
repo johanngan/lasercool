@@ -7,6 +7,7 @@ HSawtoothRotWave::HSawtoothRotWave(std::string fname):nstates(3) {
     load_params(fname,
         {
             {"spontaneous_decay_rate", &decay_rate},
+            {"enable_decay", &enable_decay},
             {"branching_ratio", &branching_ratio},
             {"low_energy_level", &low_energy},
             {"high_energy_level", &high_energy},
@@ -67,28 +68,28 @@ std::vector<std::complex<double>> HSawtoothRotWave::operator()(double gt,
     const std::vector<std::complex<double>>& rho_c) {
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     return {
-        (1 - branching_ratio)*rho_c[subidx(2,2)],
+        (1 - branching_ratio)*rho_c[subidx(2,2)] * enable_decay,
         0.5i*(detun_per_decay(gt)*rho_c[subidx(0,1)]
             + rabi_softswitch(gt)*rho_c[subidx(0,2)]),
-        -0.5*rho_c[subidx(0,2)]
+        -0.5*rho_c[subidx(0,2)] * enable_decay
             + 0.5i*(-detun_per_decay(gt)*rho_c[subidx(0,2)]
             + rabi_softswitch(gt)*rho_c[subidx(0,1)]),
 
         -0.5i*(detun_per_decay(gt)*rho_c[subidx(1,0)]
             + rabi_softswitch(gt)*rho_c[subidx(2,0)]),
-        branching_ratio*rho_c[subidx(2,2)]
+        branching_ratio*rho_c[subidx(2,2)] * enable_decay
             + 0.5i*rabi_softswitch(gt)*(rho_c[subidx(1,2)]-rho_c[subidx(2,1)]),
-        -0.5*rho_c[subidx(1,2)]
+        -0.5*rho_c[subidx(1,2)] * enable_decay
             + 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(1,1)]-rho_c[subidx(2,2)])
             - detun_per_decay(gt)*rho_c[subidx(1,2)]),
         
-        -0.5*rho_c[subidx(2,0)]
+        -0.5*rho_c[subidx(2,0)] * enable_decay
             + 0.5i*(detun_per_decay(gt)*rho_c[subidx(2,0)]
             - rabi_softswitch(gt)*rho_c[subidx(1,0)]),
-        -0.5*rho_c[subidx(2,1)]
+        -0.5*rho_c[subidx(2,1)] * enable_decay
             - 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(1,1)]-rho_c[subidx(2,2)])
             - detun_per_decay(gt)*rho_c[subidx(2,1)]),
-        -rho_c[subidx(2,2)]
+        -rho_c[subidx(2,2)] * enable_decay
             - 0.5i*rabi_softswitch(gt)*(rho_c[subidx(1,2)]-rho_c[subidx(2,1)])
     };
 }
