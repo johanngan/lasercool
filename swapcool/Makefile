@@ -9,7 +9,7 @@ SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 TARGETS = swapint
 
-swapint: swapint.o HInt.o
+swapint: swapint.o HInt.o HSwap.o
 	$(LD) $(LFLAGS) $^ $(LPATHS) $(LIBS) -o $@
 
 .cpp.o:

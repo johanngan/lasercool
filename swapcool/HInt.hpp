@@ -1,34 +1,18 @@
 #ifndef HINT_HPP_
 #define HINT_HPP_
 
-#include <string>
-#include <vector>
-#include <complex>
-#include "read_config.hpp"
+#include "HSwap.hpp"
 
-// Two-level Hamiltonian for sawtooth laser frequency oscillating about
-// some transition frequency, under the rotating wave approximation
-struct HInt {
+// Hamiltonian for sawtooth laser frequency oscillating about
+// some transition frequency, under the rotating wave approximation,
+// only paying attention to internal states
+struct HInt : public HSwap {
     const unsigned nstates; // "matrix dimension"
-    double branching_ratio; // To the "low" (but not ground) state
-    double enable_decay;    // 1 for enabled and 0 for disabled
-    double rabi_freq_per_decay, detun_amp_per_decay, detun_freq_per_decay;
-    double rabi_switch_coeff, rabi_switch_power;
-    double transition_angfreq_per_decay;
 
-    HInt(std::string);
+    HInt(std::string fname):HSwap(fname), nstates(3) {}
     // Convert matrix subscripts to linear indexes (row-major format)
     unsigned subidx(unsigned, unsigned);
 
-    // Rabi frequency soft switch on/off at a given (decay rate)*time
-    // starting from 0 at gamma*t = 0 (mod gamma/f)
-    double rabi_softswitch(double);
-    // Detuning with sawtooth oscillation at a given (decay rate)*time,
-    // starting from the minimum value at gamma*t = 0
-    double detun_per_decay(double);
-    // After some time (decay rate)*t
-    // Assumes detuning chirp frequency is nonzero
-    double cumulative_phase(double);
     // Transforms the coefficients solved for in the rotating wave
     // approximation back to the actual density matrix values;
     // i.e. put the oscillation back in.
