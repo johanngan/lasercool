@@ -1,5 +1,5 @@
-#ifndef TWOLEVEL_HPP_
-#define TWOLEVEL_HPP_
+#ifndef SWAPLASER_HPP_
+#define SWAPLASER_HPP_
 
 #include <cmath>
 #include <iomanip>

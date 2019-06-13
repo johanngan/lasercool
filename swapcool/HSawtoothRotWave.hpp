@@ -10,6 +10,7 @@
 // some transition frequency, under the rotating wave approximation
 struct HSawtoothRotWave {
     const unsigned nstates; // "matrix dimension"
+    double branching_ratio; // To the "low" (but not ground) state
     double rabi_freq_per_decay, detun_amp_per_decay, detun_freq_per_decay;
     double rabi_switch_coeff, rabi_switch_power;
     double transition_angfreq_per_decay;

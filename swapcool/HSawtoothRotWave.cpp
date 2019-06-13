@@ -2,11 +2,12 @@
 using namespace std::complex_literals;
 const double HBAR = 1.054571800e-34;
 
-HSawtoothRotWave::HSawtoothRotWave(std::string fname):nstates(2) {
+HSawtoothRotWave::HSawtoothRotWave(std::string fname):nstates(3) {
     double decay_rate, low_energy, high_energy;
     load_params(fname,
         {
             {"spontaneous_decay_rate", &decay_rate},
+            {"branching_ratio", &branching_ratio},
             {"low_energy_level", &low_energy},
             {"high_energy_level", &high_energy},
             {"rabi_frequency", &rabi_freq_per_decay},
@@ -50,9 +51,14 @@ std::vector<std::complex<double>> HSawtoothRotWave::density_matrix(
     std::complex<double> cexp = std::exp(1i*cumulative_phase(gt));
     return {
         coefficients[subidx(0,0)],
-        coefficients[subidx(0,1)]*cexp,
-        coefficients[subidx(1,0)]*std::conj(cexp),
-        coefficients[subidx(1,1)]
+        coefficients[subidx(0,1)],
+        coefficients[subidx(0,2)],
+        coefficients[subidx(1,0)],
+        coefficients[subidx(1,1)],
+        coefficients[subidx(1,2)]*cexp,
+        coefficients[subidx(2,0)],
+        coefficients[subidx(2,1)]*std::conj(cexp),
+        coefficients[subidx(2,2)]
     };
 }
 
@@ -61,15 +67,28 @@ std::vector<std::complex<double>> HSawtoothRotWave::operator()(double gt,
     const std::vector<std::complex<double>>& rho_c) {
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     return {
-        rho_c[subidx(1,1)]
-            + 0.5i*rabi_softswitch(gt)*(rho_c[subidx(0,1)]-rho_c[subidx(1,0)]),
-        -0.5*rho_c[subidx(0,1)]
-            + 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(0,0)]-rho_c[subidx(1,1)])
-            - detun_per_decay(gt)*rho_c[subidx(0,1)]),
-        -0.5*rho_c[subidx(1,0)]
-            - 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(0,0)]-rho_c[subidx(1,1)])
-            - detun_per_decay(gt)*rho_c[subidx(1,0)]),
-        -rho_c[subidx(1,1)]
-            - 0.5i*rabi_softswitch(gt)*(rho_c[subidx(0,1)]-rho_c[subidx(1,0)])
+        (1 - branching_ratio)*rho_c[subidx(2,2)],
+        0.5i*(detun_per_decay(gt)*rho_c[subidx(0,1)]
+            + rabi_softswitch(gt)*rho_c[subidx(0,2)]),
+        -0.5*rho_c[subidx(0,2)]
+            + 0.5i*(-detun_per_decay(gt)*rho_c[subidx(0,2)]
+            + rabi_softswitch(gt)*rho_c[subidx(0,1)]),
+
+        -0.5i*(detun_per_decay(gt)*rho_c[subidx(1,0)]
+            + rabi_softswitch(gt)*rho_c[subidx(2,0)]),
+        branching_ratio*rho_c[subidx(2,2)]
+            + 0.5i*rabi_softswitch(gt)*(rho_c[subidx(1,2)]-rho_c[subidx(2,1)]),
+        -0.5*rho_c[subidx(1,2)]
+            + 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(1,1)]-rho_c[subidx(2,2)])
+            - detun_per_decay(gt)*rho_c[subidx(1,2)]),
+        
+        -0.5*rho_c[subidx(2,0)]
+            + 0.5i*(detun_per_decay(gt)*rho_c[subidx(2,0)]
+            - rabi_softswitch(gt)*rho_c[subidx(1,0)]),
+        -0.5*rho_c[subidx(2,1)]
+            - 1i*(0.5*rabi_softswitch(gt)*(rho_c[subidx(1,1)]-rho_c[subidx(2,2)])
+            - detun_per_decay(gt)*rho_c[subidx(2,1)]),
+        -rho_c[subidx(2,2)]
+            - 0.5i*rabi_softswitch(gt)*(rho_c[subidx(1,2)]-rho_c[subidx(2,1)])
     };
 }

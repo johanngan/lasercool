@@ -7,7 +7,7 @@ LD = g++
 LFLAGS = -O3 -flto
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
-TARGET = twolevel
+TARGET = swaplaser
 
 $(TARGET): $(OBJS)
 	$(LD) $(LFLAGS) $(OBJS) $(LPATHS) $(LIBS) -o $@

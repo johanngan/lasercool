@@ -1,8 +1,8 @@
 // The density matrix is stored in row major format.
-#include "twolevel.hpp"
+#include "swaplaser.hpp"
 
 const std::string DEFAULT_CFG_FILE = "params.cfg";
-const std::string OUTFILEBASE = "output/rho_twolevel.out";
+const std::string OUTFILEBASE = "output/rho_swaplaser.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -23,29 +23,33 @@ int main(int argc, char** argv) {
 
     // Form the derivative operator, in natural units
     // d(rho)/d(Gamma*t)
-    HSawtoothRotWave deriv(cfg_file);
+    HSawtoothRotWave hamil(cfg_file);
 
     std::ofstream cyclesout("cycles.out");
     for(double gt = 0; gt < duration_by_decay; gt += 1e-3) {
-        cyclesout << gt << " " << deriv.rabi_softswitch(gt) << " "
-        << deriv.detun_per_decay(gt) << " " << deriv.cumulative_phase(gt)
+        cyclesout << gt << " " << hamil.rabi_softswitch(gt) << " "
+        << hamil.detun_per_decay(gt) << " " << hamil.cumulative_phase(gt)
         << std::endl;
     }
     cyclesout.close();
 
     // Set the initial condition to be all in the ground state
-    std::vector<std::complex<double>> rho_c0{1, 0, 0, 0};
+    std::vector<std::complex<double>> rho_c0{
+        0, 0, 0,
+        0, 1, 0,
+        0, 0, 0,
+    };
 
     // Solve the system in natural units with an adaptive RK method
-    auto rho_c_solution = timestepping::odesolve(deriv, rho_c0,
+    auto rho_c_solution = timestepping::odesolve(hamil, rho_c0,
         duration_by_decay, timestepping::AdaptiveRK(tol));
 
     // Form filename
     std::ostringstream oftag_ss;
     oftag_ss << std::setprecision(OUTFILENAME_PRECISION)
-        << "A" << deriv.detun_amp_per_decay
-        << "_f" << deriv.detun_freq_per_decay
-        << "_Omega" << deriv.rabi_freq_per_decay;
+        << "A" << hamil.detun_amp_per_decay
+        << "_f" << hamil.detun_freq_per_decay
+        << "_Omega" << hamil.rabi_freq_per_decay;
     std::string ofname = OUTFILEBASE;
     ofname.insert(ofname.rfind("."), "_" + oftag_ss.str());
 
@@ -57,9 +61,12 @@ int main(int argc, char** argv) {
     outfile << "t |rho11| |rho22|" << std::endl;
     for(auto point: rho_c_solution) {
         // Convert rho_c (rotating wave coefficients) to rho
-        auto rho = deriv.density_matrix(point.first, point.second);
+        auto rho = hamil.density_matrix(point.first, point.second);
         outfile << point.first / decay_rate // Convert from Gamma*t to just t
-            << " " << std::abs(rho[0]) << " " << std::abs(rho[3]) << std::endl;
+            << " " << std::abs(rho[hamil.subidx(0,0)])
+            << " " << std::abs(rho[hamil.subidx(1,1)])
+            << " " << std::abs(rho[hamil.subidx(2,2)])
+            << std::endl;
     }
     outfile.close();
 }
