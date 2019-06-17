@@ -1,12 +1,12 @@
 #include "HInt.hpp"
 using namespace std::complex_literals;
 
-unsigned HInt::subidx(unsigned i, unsigned j) {
+unsigned HInt::subidx(unsigned i, unsigned j) const {
     return nstates*i + j;
 }
 
 std::vector<std::complex<double>> HInt::density_matrix(
-    double gt, const std::vector<std::complex<double>>& coefficients) {
+    double gt, const std::vector<std::complex<double>>& coefficients) const {
     std::complex<double> cexp = std::exp(1i*cumulative_phase(gt));
     return {
         coefficients[subidx(0,0)],
@@ -23,7 +23,7 @@ std::vector<std::complex<double>> HInt::density_matrix(
 
 // Assumes row major format
 std::vector<std::complex<double>> HInt::operator()(double gt,
-    const std::vector<std::complex<double>>& rho_c) {
+    const std::vector<std::complex<double>>& rho_c) const {
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     return {
         (1 - branching_ratio)*rho_c[subidx(2,2)] * enable_decay,

@@ -22,17 +22,23 @@ struct HSwap{
 
     // Rabi frequency soft switch on/off at a given (decay rate)*time
     // starting from 0 at gamma*t = 0 (mod gamma/f)
-    double rabi_softswitch(double);
+    double rabi_softswitch(double) const;
     // Detuning with sawtooth oscillation at a given (decay rate)*time,
     // starting from the minimum value at gamma*t = 0
-    double detun_per_decay(double);
+    double detun_per_decay(double) const;
     // After some time (decay rate)*t
     // Assumes detuning chirp frequency is nonzero
-    double cumulative_phase(double);
+    double cumulative_phase(double) const;
+
+    // Transforms the coefficients solved for in the rotating wave
+    // approximation back to the actual density matrix values;
+    // i.e. put the oscillation back in.
+    virtual std::vector<std::complex<double>> density_matrix(
+        double, const std::vector<std::complex<double>>&) const = 0;
 
     // Derivative operator to be passed to the timestepper
     virtual std::vector<std::complex<double>> operator()(double,
-        const std::vector<std::complex<double>>&) = 0;
+        const std::vector<std::complex<double>>&) const = 0;
 };
 
 #endif

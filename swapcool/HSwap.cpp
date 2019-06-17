@@ -19,18 +19,18 @@ HSwap::HSwap(std::string fname):HBAR(1.054571800e-34) {
     transition_angfreq_per_decay = (high_energy - low_energy)/(HBAR*decay_rate);
 }
 
-double HSwap::rabi_softswitch(double gt) {
+double HSwap::rabi_softswitch(double gt) const {
     double _;
     return rabi_freq_per_decay*std::exp(-rabi_switch_coeff*std::pow(
         std::abs(2*modf(detun_freq_per_decay*gt, &_) - 1), rabi_switch_power));
 }
 
-double HSwap::detun_per_decay(double gt) {
+double HSwap::detun_per_decay(double gt) const {
     double _;
     return detun_amp_per_decay * (2*modf(detun_freq_per_decay*gt, &_) - 1);
 }
 
-double HSwap::cumulative_phase(double gt) {
+double HSwap::cumulative_phase(double gt) const {
     double ncycles;
     double cycle_completion = modf(gt*detun_freq_per_decay, &ncycles);
     // Phase from full cycles + the phase from the current one
