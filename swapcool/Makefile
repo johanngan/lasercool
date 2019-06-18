@@ -7,9 +7,14 @@ LD = g++
 LFLAGS = -O3 -flto
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
-TARGETS = swapint
+TARGETS = swapint swapmotion
+
+all: $(TARGETS)
 
 swapint: swapint.o HInt.o HSwap.o
+swapmotion: swapmotion.o HMotion.o HSwap.o
+
+$(TARGETS):
 	$(LD) $(LFLAGS) $^ $(LPATHS) $(LIBS) -o $@
 
 .cpp.o:
