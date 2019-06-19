@@ -1,23 +1,28 @@
 #include "optical_molasses.hpp"
 
-const std::string CFG_FILE = "config/params_optmol.cfg";
+const std::string DEFAULT_CFG_FILE = "config/params_optmol.cfg";
 const std::string OUTPUT_DIR = "output/optmol";
 const std::string ENERGY_OUTFILEBASE = "avgKE.out";
 const std::string SPEED_DISTR_OUTFILEBASE = "speed_distr.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
-    if(argc != 2) {
-        std::cout << "Usage: ./optical_molasses <particle species>"
+    if(argc < 2) {
+        std::cout << "Usage: ./optical_molasses <particle species> [<config file>]"
             << std::endl;
         return 1;
+    }
+    // Read in a possible config file
+    std::string cfg_file = DEFAULT_CFG_FILE;
+    if(argc > 2) {
+        cfg_file = std::string(argv[2]);
     }
 
     // Get params
     // Accepted particle species strings:
     // "BePlus"
     // "Rb"
-    PhysicalParams params(std::string(argv[1]), CFG_FILE);
+    PhysicalParams params(std::string(argv[1]), cfg_file);
     
     // Print out the params
     params.print();
