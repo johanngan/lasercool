@@ -1,4 +1,4 @@
-#include "read_config.hpp"
+#include "lasercool/read_config.hpp"
 
 int main() {
     // auto params = read_config("test.cfg");

@@ -1,7 +1,7 @@
 #include "optical_molasses.hpp"
 
-const std::string CFG_FILE = "params.cfg";
-const std::string OUTPUT_DIR = "output";
+const std::string CFG_FILE = "config/params_optmol.cfg";
+const std::string OUTPUT_DIR = "output/optmol";
 const std::string ENERGY_OUTFILEBASE = "avgKE.out";
 const std::string SPEED_DISTR_OUTFILEBASE = "speed_distr.out";
 const unsigned OUTFILENAME_PRECISION = 3;

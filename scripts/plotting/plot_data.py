@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 
 ######## CONFIGURATION ########
 # numpy.loadtxt() stuff
-fname = 'test.txt'
+fname = 'output/*/*.out'
 skiprows = 0
 usecols = None
 
 # "plot", "semilogx", "semilogy", "loglog"
-axis_mode = "semilogy"
+axis_mode = "plot"
 plot_title = ''
 plot_xlabel = ''
 plot_ylabel = ''

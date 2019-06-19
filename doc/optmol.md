@@ -20,7 +20,7 @@ Pairs of particles can collide with each other in a random scattering event, whi
 If there are N particles, then every time step, N/2 random "candidate pairs" are chosen, so that if all the collisions happened, every particle is expected to participate in one collision. Out of the candidate pairs, each randomly collides or doesn't collide with a probability dependent on the relative speed of the pair. The collision probablity comes from [this paper](http://www.physics.purdue.edu/~robichf/papers/PoP10_2217.pdf), and is computed by matching `<theta^2>` in the "random rotation" model implemented in this code to the theoretical value given in the paper.
 
 # Usage
-Make sure `libreadcfg` is compiled (in `/lib`). Run `make` in this directory, set parameters in `params.cfg`, then run the `optical_molasses` executable with the particle species string as an argument.
+Run `make optmol` in the top-level directory, set the parameters in `/config/params_optmol.cfg`, then run `/bin/optical_molasses` with the particle species string as an argument.
 
 ## Species string
 The particle species string sets the mass, decay rate, and transition frequency of the particle. These are hard coded with other fundamental constants in `constants.*pp`. Available species:
@@ -31,7 +31,7 @@ The particle species string sets the mass, decay rate, and transition frequency 
 To add another species, add the three parameters to the constants files, add a clause to the beginning lines in `PhysicalParams.cpp` with the desired species string, and recompile. Then run the executable with the appropriate species string.
 
 ## Lab parameters
-`params.cfg` contains different experimental parameters that might need to be changed. They are read at runtime and don't require recompilation to change. The following parameters have defaults, which can be used by setting the parameter to `nan`.
+`params_optmol.cfg` contains different experimental parameters that might need to be changed. They are read at runtime and don't require recompilation to change. The following parameters have defaults, which can be used by setting the parameter to `nan`.
 
 - initial_detuning: The optimal detuning, which leads to the greatest rate of energy decreasing, assuming the temperature is relatively high.
 - final_detuning: -0.5. This leads to the minimum theoretical equilibrium temperature, i.e. the Doppler temperature.

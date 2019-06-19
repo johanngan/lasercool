@@ -3,8 +3,8 @@
 // as |nl, kl><nr, kr|
 #include "swapmotion.hpp"
 
-const std::string DEFAULT_CFG_FILE = "params.cfg";
-const std::string OUTFILEBASE = "output/rho_swapmotion.out";
+const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
+const std::string OUTFILEBASE = "output/swapcool/rho_swapmotion.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
     }
     outfile.close();
 
-    std::ofstream khist("khist.out");
+    std::ofstream khist("output/swapcool/khist.out");
     auto rhof = hamil.density_matrix(
         rho_c_solution.back().first, rho_c_solution.back().second);
     for(int k = -hamil.kmax; k <= hamil.kmax; ++k) {

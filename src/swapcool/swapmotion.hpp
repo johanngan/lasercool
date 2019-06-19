@@ -6,8 +6,8 @@
 #include <string>
 #include <fstream>
 #include <complex>
-#include "read_config.hpp"
 #include "HMotion.hpp"
-#include "timestepping.hpp"
+#include "lasercool/read_config.hpp"
+#include "lasercool/timestepping.hpp"
 
 #endif

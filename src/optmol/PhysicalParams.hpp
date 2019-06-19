@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
-#include "read_config.hpp"
+#include "lasercool/read_config.hpp"
 #include "constants.hpp"
 #include "mathutil.hpp"
 

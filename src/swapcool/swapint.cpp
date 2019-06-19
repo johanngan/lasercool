@@ -2,8 +2,8 @@
 // The density matrix is stored in row major format.
 #include "swapint.hpp"
 
-const std::string DEFAULT_CFG_FILE = "params.cfg";
-const std::string OUTFILEBASE = "output/rho_swapint.out";
+const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
+const std::string OUTFILEBASE = "output/swapcool/rho_swapint.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     // d(rho)/d(Gamma*t)
     HInt hamil(cfg_file);
 
-    std::ofstream cyclesout("cycles.out");
+    std::ofstream cyclesout("output/swapcool/cycles.out");
     for(double gt = 0; gt < duration_by_decay; gt += 1e-3) {
         cyclesout << gt << " " << hamil.rabi_softswitch(gt) << " "
         << hamil.detun_per_decay(gt) << " " << hamil.cumulative_phase(gt)
