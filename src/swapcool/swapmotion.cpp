@@ -28,11 +28,8 @@ int main(int argc, char** argv) {
     HMotion hamil(cfg_file);
 
     std::vector<std::complex<double>> rho_c0(hamil.nmat());
-    int k0 = 20;
-    rho_c0[hamil.subidx(1, k0, 1, k0)] = 0.5;
-    rho_c0[hamil.subidx(1, k0, 1, -k0)] = 0.5;
-    rho_c0[hamil.subidx(1, -k0, 1, k0)] = 0.5;
-    rho_c0[hamil.subidx(1, -k0, 1, -k0)] = 0.5;
+    int k0 = 0;
+    rho_c0[hamil.subidx(1, k0, 1, k0)] = 1;
 
     // Solve the system in natural units with an adaptive RK method
     auto rho_c_solution = timestepping::odesolve(hamil, rho_c0,
