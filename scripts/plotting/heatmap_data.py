@@ -12,6 +12,8 @@ from matplotlib import cm
 fname = 'output/*/*.out'
 skiprows = 0
 usecols = None  # Can only use three columns at a time
+
+cmap = cm.jet
 ######## END CONFIGURATION ########
 
 data = np.loadtxt(fname, skiprows=skiprows, usecols=usecols)
@@ -20,7 +22,7 @@ data = np.loadtxt(fname, skiprows=skiprows, usecols=usecols)
 X, Y = np.meshgrid(np.unique(data[:, 0]), np.unique(data[:, 1]))
 Z = np.reshape(data[:, 2], X.shape, order='F')
 
-plt.pcolormesh(X, Y, Z, cmap=cm.jet)
+plt.pcolormesh(X, Y, Z, cmap=cmap)
 plt.colorbar()
 
 plt.show()

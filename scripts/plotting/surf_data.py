@@ -12,6 +12,8 @@ from matplotlib import cm
 fname = 'output/*/*.out'
 skiprows = 0
 usecols = None  # Can only use three columns at a time
+
+cmap = cm.jet
 ######## END CONFIGURATION ########
 
 data = np.loadtxt(fname, skiprows=skiprows, usecols=usecols)
@@ -22,7 +24,7 @@ Z = np.reshape(data[:, 2], X.shape, order='F')
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
-surf = ax.plot_surface(X, Y, Z, cmap=cm.jet)
+surf = ax.plot_surface(X, Y, Z, cmap=cmap)
 fig.colorbar(surf)
 
 plt.show()
