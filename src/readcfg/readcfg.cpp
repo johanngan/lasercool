@@ -1,4 +1,4 @@
-#include "lasercool/read_config.hpp"
+#include "lasercool/readcfg.hpp"
 
 std::unordered_map<std::string, double> read_config(std::string fname,
     std::string delimiter) {

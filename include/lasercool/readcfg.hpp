@@ -1,5 +1,5 @@
-#ifndef READ_CONFIG_HPP_
-#define READ_CONFIG_HPP_
+#ifndef READCFG_HPP_
+#define READCFG_HPP_
 
 #include <iostream>
 #include <fstream>

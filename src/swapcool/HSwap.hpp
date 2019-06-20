@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <complex>
-#include "lasercool/read_config.hpp"
+#include "lasercool/readcfg.hpp"
 
 // Abstract class.
 // Hamiltonian for sawtooth laser frequency oscillating about

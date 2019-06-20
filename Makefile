@@ -68,10 +68,7 @@ $(builddir)/PhysicalParams.o $(builddir)/swapint.o $(builddir)/swapmotion.o:
 $(builddir)/%.o: %.cpp
 	$(CC) -c $(CFLAGS) -I$(includedir) $< -o $@
 
-$(libdir)/libreadcfg.a: $(builddir)/read_config.o
-	$(AR) $(ARFLAGS) $@ $<
-
-$(libdir)/libiotag.a: $(builddir)/iotag.o
+$(libdir)/lib%.a: $(builddir)/%.o
 	$(AR) $(ARFLAGS) $@ $<
 
 clean:
