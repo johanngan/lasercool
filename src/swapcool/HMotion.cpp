@@ -31,7 +31,7 @@ unsigned HMotion::nstates() const {
 }
 
 unsigned HMotion::subidx(unsigned nl, int kl, unsigned nr, int kr) const {
-    return stateidx(nr, kr) + (2*kmax + 1)*nint*stateidx(nl, kl);
+    return stateidx(nr, kr) + nstates()*stateidx(nl, kl);
 }
 
 unsigned HMotion::nmat() const {
@@ -142,9 +142,9 @@ std::vector<std::complex<double>> HMotion::operator()(double gt,
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     std::vector<std::complex<double>> drho_c(rho_c.size());
     for(unsigned nl = 0; nl < nint; ++nl) {
-        for(int kl = -kmax; kl < kmax; ++kl) {
+        for(int kl = -kmax; kl <= kmax; ++kl) {
             for(unsigned nr = 0; nr < nint; ++nr) {
-                for(int kr = -kmax; kr < kmax; ++kr) {
+                for(int kr = -kmax; kr <= kmax; ++kr) {
                     drho_c[subidx(nl, kl, nr, kr)] =
                         -1i*haction(gt, rho_c, nl, kl, nr, kr)
                         +1i*std::conj(haction(gt, rho_c, nr, kr, nl, kl))
