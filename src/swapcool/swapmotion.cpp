@@ -18,22 +18,24 @@ int main(int argc, char** argv) {
         cfg_file = std::string(argv[1]);
     }
 
-    double decay_rate, duration_by_decay, tol;
+    double decay_rate, duration_by_decay, tol, init_k_double;
     load_params(cfg_file,
         {
             {"spontaneous_decay_rate", &decay_rate},
             {"duration", &duration_by_decay},
-            {"tolerance", &tol}
+            {"tolerance", &tol},
+            {"initial_momentum", &init_k_double}
         }
     );
+    int init_k = static_cast<int>(init_k_double);
 
     // Form the derivative operator, in natural units
     // d(rho)/d(Gamma*t)
     HMotion hamil(cfg_file);
 
     std::vector<std::complex<double>> rho_c0(hamil.nmat());
-    int k0 = 0;
-    rho_c0[hamil.subidx(1, k0, 1, k0)] = 1;
+    // Initialize all in one k-state
+    rho_c0[hamil.subidx(1, init_k, 1, init_k)] = 1;
 
     // Solve the system in natural units with an adaptive RK method
     auto rho_c_solution = timestepping::odesolve(hamil, rho_c0,
@@ -44,7 +46,8 @@ int main(int argc, char** argv) {
     oftag_ss << std::setprecision(OUTFILENAME_PRECISION)
         << "A" << hamil.detun_amp_per_decay
         << "_f" << hamil.detun_freq_per_decay
-        << "_Omega" << hamil.rabi_freq_per_decay;
+        << "_Omega" << hamil.rabi_freq_per_decay
+        << "_k" << init_k;
     std::ofstream cyclesout(fullfile(tag_filename(
         CYCLE_OUTFILEBASE, oftag_ss.str()),
         OUTPUT_DIR
