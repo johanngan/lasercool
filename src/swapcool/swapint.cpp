@@ -3,9 +3,9 @@
 #include "swapint.hpp"
 
 const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
-const std::string OUTPUT_DIR = "output/swapcool";
-const std::string RHO_OUTFILEBASE = "rho_swapint.out";
-const std::string CYCLE_OUTFILEBASE = "cycles_swapint.out";
+const std::string OUTPUT_DIR = "output/swapcool/swapint";
+const std::string RHO_OUTFILEBASE = "rho.out";
+const std::string CYCLE_OUTFILEBASE = "cycles.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -70,9 +70,9 @@ int main(int argc, char** argv) {
         // Convert rho_c (rotating wave coefficients) to rho
         auto rho = hamil.density_matrix(point.first, point.second);
         rho_out << point.first / decay_rate // Convert from Gamma*t to just t
-            << " " << std::abs(rho[hamil.subidx(0,0)])
-            << " " << std::abs(rho[hamil.subidx(1,1)])
-            << " " << std::abs(rho[hamil.subidx(2,2)])
+            << " " << std::real(rho[hamil.subidx(0,0)])
+            << " " << std::real(rho[hamil.subidx(1,1)])
+            << " " << std::real(rho[hamil.subidx(2,2)])
             << std::endl;
     }
     rho_out.close();

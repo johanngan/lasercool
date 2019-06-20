@@ -4,10 +4,10 @@
 #include "swapmotion.hpp"
 
 const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
-const std::string OUTPUT_DIR = "output/swapcool";
-const std::string RHO_OUTFILEBASE = "rho_swapmotion.out";
-const std::string CYCLE_OUTFILEBASE = "cycles_swapmotion.out";
-const std::string KDIST_OUTFILEBASE = "kdist_swapmotion.out";
+const std::string OUTPUT_DIR = "output/swapcool/swapmotion";
+const std::string RHO_OUTFILEBASE = "rho.out";
+const std::string CYCLE_OUTFILEBASE = "cycles.out";
+const std::string KDIST_OUTFILEBASE = "kdist.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -78,29 +78,29 @@ int main(int argc, char** argv) {
     for(auto point: rho_c_solution) {
         auto rho = hamil.density_matrix(point.first, point.second);
         rho_out << point.first / decay_rate // Convert from Gamma*t to just t
-            << " " << std::abs(hamil.partialtr_k(rho, 0))
-            << " " << std::abs(hamil.partialtr_k(rho, 1))
-            << " " << std::abs(hamil.partialtr_k(rho, 2))
-            << " " << std::abs(hamil.totaltr(rho))
-            << " " << std::abs(hamil.purity(rho));
+            << " " << std::real(hamil.partialtr_k(rho, 0))
+            << " " << std::real(hamil.partialtr_k(rho, 1))
+            << " " << std::real(hamil.partialtr_k(rho, 2))
+            << " " << std::real(hamil.totaltr(rho))
+            << " " << std::real(hamil.purity(rho));
         double krms = 0;    // RMS k value
         for(int k = 0; k <= hamil.kmax; ++k) {
             auto ktr = hamil.partialtr_n(rho, k);
             if(k != 0) {
                 ktr += hamil.partialtr_n(rho, -k);
             }
-            rho_out << " " << std::abs(ktr);
-            krms += std::abs(ktr) * k*k;
+            rho_out << " " << std::real(ktr);
+            krms += std::real(ktr) * k*k;
         }
         rho_out << " " << sqrt(krms);
         rho_out << std::endl;
 
         for(int k = -hamil.kmax; k <= hamil.kmax; ++k) {
             kdistout << point.first / decay_rate
-                << " " << k << " " << std::abs(hamil.partialtr_n(rho, k))
-                << " " << std::abs(rho[hamil.subidx(0, k, 0, k)])
-                << " " << std::abs(rho[hamil.subidx(1, k, 1, k)])
-                << " " << std::abs(rho[hamil.subidx(2, k, 2, k)])
+                << " " << k << " " << std::real(hamil.partialtr_n(rho, k))
+                << " " << std::real(rho[hamil.subidx(0, k, 0, k)])
+                << " " << std::real(rho[hamil.subidx(1, k, 1, k)])
+                << " " << std::real(rho[hamil.subidx(2, k, 2, k)])
                 << std::endl;
         }
     }
