@@ -8,6 +8,7 @@
 #include <complex>
 #include "HMotion.hpp"
 #include "lasercool/read_config.hpp"
+#include "lasercool/iotag.hpp"
 #include "lasercool/timestepping.hpp"
 
 #endif

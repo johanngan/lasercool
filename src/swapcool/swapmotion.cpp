@@ -4,7 +4,10 @@
 #include "swapmotion.hpp"
 
 const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
-const std::string OUTFILEBASE = "output/swapcool/rho_swapmotion.out";
+const std::string OUTPUT_DIR = "output/swapcool";
+const std::string RHO_OUTFILEBASE = "rho_swapmotion.out";
+const std::string CYCLE_OUTFILEBASE = "cycles_swapmotion.out";
+const std::string KDIST_OUTFILEBASE = "kdist_swapmotion.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -35,54 +38,72 @@ int main(int argc, char** argv) {
     auto rho_c_solution = timestepping::odesolve(hamil, rho_c0,
         duration_by_decay, timestepping::AdaptiveRK(tol));
 
-    // Form filename
+    // Form output files
     std::ostringstream oftag_ss;
     oftag_ss << std::setprecision(OUTFILENAME_PRECISION)
         << "A" << hamil.detun_amp_per_decay
         << "_f" << hamil.detun_freq_per_decay
         << "_Omega" << hamil.rabi_freq_per_decay;
-    std::string ofname = OUTFILEBASE;
-    ofname.insert(ofname.rfind("."), "_" + oftag_ss.str());
+    std::ofstream cyclesout(fullfile(tag_filename(
+        CYCLE_OUTFILEBASE, oftag_ss.str()),
+        OUTPUT_DIR
+    ));
+    for(double gt = 0; gt < duration_by_decay; gt += 1e-3) {
+        cyclesout << gt << " " << hamil.rabi_softswitch(gt) << " "
+        << hamil.detun_per_decay(gt) << " " << hamil.cumulative_phase(gt)
+        << std::endl;
+    }
+    cyclesout.close();
+
+    std::ofstream rho_out(fullfile(tag_filename(
+        RHO_OUTFILEBASE, oftag_ss.str()),
+        OUTPUT_DIR
+    ));
+    std::ofstream kdistout(fullfile(tag_filename(
+        KDIST_OUTFILEBASE, oftag_ss.str()),
+        OUTPUT_DIR
+    ));
 
     // Write the solution in SI units
     // Column order is t, |rho11|, |rho22|, |rho33|
-    std::ofstream outfile(ofname);
     // Write table header
-    outfile << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
+    rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
     for(int k = 0; k <= hamil.kmax; ++k) {
-        outfile << " |k" << k << "|";
+        rho_out << " |k" << k << "|";
     }
-    outfile << " |k_rms|";
-    outfile << std::endl;
+    rho_out << " |k_rms|";
+    rho_out << std::endl;
+    // Write table header
+    kdistout << "t k P(k) P(n = 0, k), P(n = 1, k), P(n = 2, k)" << std::endl;
     for(auto point: rho_c_solution) {
         auto rho = hamil.density_matrix(point.first, point.second);
-        outfile << point.first / decay_rate // Convert from Gamma*t to just t
+        rho_out << point.first / decay_rate // Convert from Gamma*t to just t
             << " " << std::abs(hamil.partialtr_k(rho, 0))
             << " " << std::abs(hamil.partialtr_k(rho, 1))
             << " " << std::abs(hamil.partialtr_k(rho, 2))
             << " " << std::abs(hamil.totaltr(rho))
             << " " << std::abs(hamil.purity(rho));
-            double krms = 0;    // RMS k value
-            for(int k = 0; k <= hamil.kmax; ++k) {
-                auto ktr = hamil.partialtr_n(rho, k);
-                if(k != 0) {
-                    ktr += hamil.partialtr_n(rho, -k);
-                }
-                outfile << " " << std::abs(ktr);
-                krms += std::abs(ktr) * k*k;
+        double krms = 0;    // RMS k value
+        for(int k = 0; k <= hamil.kmax; ++k) {
+            auto ktr = hamil.partialtr_n(rho, k);
+            if(k != 0) {
+                ktr += hamil.partialtr_n(rho, -k);
             }
-            outfile << " " << sqrt(krms);
-            outfile << std::endl;
-    }
-    outfile.close();
+            rho_out << " " << std::abs(ktr);
+            krms += std::abs(ktr) * k*k;
+        }
+        rho_out << " " << sqrt(krms);
+        rho_out << std::endl;
 
-    std::ofstream khist("output/swapcool/khist.out");
-    auto rhof = hamil.density_matrix(
-        rho_c_solution.back().first, rho_c_solution.back().second);
-    for(int k = -hamil.kmax; k <= hamil.kmax; ++k) {
-        auto ktr = hamil.partialtr_n(rhof, k);
-        khist << k << " " << std::abs(ktr)
-            << " " << k*k << " " << std::abs(ktr)*std::abs(ktr) << std::endl;
+        for(int k = -hamil.kmax; k <= hamil.kmax; ++k) {
+            kdistout << point.first / decay_rate
+                << " " << k << " " << std::abs(hamil.partialtr_n(rho, k))
+                << " " << std::abs(rho[hamil.subidx(0, k, 0, k)])
+                << " " << std::abs(rho[hamil.subidx(1, k, 1, k)])
+                << " " << std::abs(rho[hamil.subidx(2, k, 2, k)])
+                << std::endl;
+        }
     }
-    khist.close();
+    rho_out.close();
+    kdistout.close();
 }
