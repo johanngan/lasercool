@@ -65,8 +65,9 @@ int main(int argc, char** argv) {
         << "_RampRate" << params.detuning_ramp_rate_natl_units
         << "_Temp" << params.initial_temp;
 
-    std::ofstream energy_outfile(OUTPUT_DIR + "/" + tag_filename(
-        ENERGY_OUTFILEBASE, suffix_ss.str(), params.particle_species));
+    std::ofstream energy_outfile(fullfile(tag_filename(
+        ENERGY_OUTFILEBASE, suffix_ss.str(), params.particle_species),
+        OUTPUT_DIR));
     // Number of energy snapshots to take
     unsigned n_snapshots = 1001;
     unsigned steps_between_snapshots = params.n_time_steps / (n_snapshots - 1);
@@ -75,9 +76,11 @@ int main(int argc, char** argv) {
         << calc_avg_kinetic_energy(v_particles, params.mass)/K_BOLTZMANN;
 
     // Initial speed distribution
-    std::ofstream speed_init_outfile(OUTPUT_DIR + "/" + tag_filename(
-        tag_filename(SPEED_DISTR_OUTFILEBASE, "initial"),
-        suffix_ss.str(), params.particle_species));
+    std::ofstream speed_init_outfile(fullfile(tag_filename(
+        SPEED_DISTR_OUTFILEBASE, {"initial", suffix_ss.str()},
+        params.particle_species),
+        OUTPUT_DIR
+    ));
     for(auto vp: v_particles) {
         speed_init_outfile << sqrt(sqr(vp[0]) + sqr(vp[1]) + sqr(vp[2]))
             << " ";
@@ -193,9 +196,11 @@ int main(int argc, char** argv) {
     energy_outfile.close();
 
     // Final speed distribution
-    std::ofstream speed_final_outfile(OUTPUT_DIR + "/" + tag_filename(
-        tag_filename(SPEED_DISTR_OUTFILEBASE, "final"),
-        suffix_ss.str(), params.particle_species));
+    std::ofstream speed_final_outfile(fullfile(tag_filename(
+        SPEED_DISTR_OUTFILEBASE, {"final", suffix_ss.str()},
+        params.particle_species),
+        OUTPUT_DIR
+    ));
     for(auto vp: v_particles) {
         speed_final_outfile << sqrt(sqr(vp[0]) + sqr(vp[1]) + sqr(vp[2]))
             << " ";
@@ -250,14 +255,4 @@ std::pair< std::vector<double>, std::vector<double> > scatter_pair(
         new_v2.push_back((v1[i] + v2[i] - rel_speed*rand_dir[i]) / 2);
     }
     return std::make_pair(new_v1, new_v2);
-}
-
-std::string tag_filename(std::string filename, std::string suffix,
-    std::string prefix, std::string separator) {
-    std::string tagged = filename.insert(filename.rfind("."),
-        separator + suffix);
-    if(!prefix.empty()) {
-        tagged = prefix + separator + tagged;
-    }
-    return tagged;
 }

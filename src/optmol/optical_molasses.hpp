@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <chrono>
 #include <algorithm>
+#include "lasercool/iotag.hpp"
 #include "constants.hpp"
 #include "mathutil.hpp"
 #include "PhysicalParams.hpp"
@@ -28,9 +29,5 @@ double calc_rel_speed(const std::vector<double>&, const std::vector<double>&);
 std::pair< std::vector<double>, std::vector<double> > scatter_pair(
     const std::vector<double>&, const std::vector<double>&,
     const std::vector<double>&);
-
-// Tag a file name with some suffix
-std::string tag_filename(std::string, std::string,
-    std::string prefix="", std::string separator="_");
 
 #endif

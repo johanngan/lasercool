@@ -16,26 +16,28 @@ vendordir = $(prefix)/vendor
 
 VPATH = \
 $(includedir)/lasercool:\
+$(srcdir)/iotag:\
 $(srcdir)/readcfg:\
 $(srcdir)/optmol:\
 $(srcdir)/swapcool
 
 PROG = optical_molasses swapint swapmotion
 BINS = $(addprefix $(bindir)/, $(PROG))
-ARCHIVES = libreadcfg.a
+ARCHIVES = libreadcfg.a libiotag.a
 LIBS = $(addprefix $(libdir)/, $(ARCHIVES))
 
-.PHONY: all clean libs readcfg optmol swapint swapmotion swapcool
+.PHONY: all clean libs readcfg iotag optmol swapint swapmotion swapcool
 all: $(LIBS) $(BINS)
 libs: $(LIBS)
 readcfg: $(libdir)/libreadcfg.a
-optmol: readcfg $(bindir)/optical_molasses
-swapint: readcfg $(bindir)/swapint
-swapmotion: readcfg $(bindir)/swapmotion
+iotag: $(libdir)/libiotag.a
+optmol: readcfg iotag $(bindir)/optical_molasses
+swapint: readcfg iotag $(bindir)/swapint
+swapmotion: readcfg iotag $(bindir)/swapmotion
 swapcool: swapint swapmotion
 
 $(BINS):
-	$(LD) $(LFLAGS) $^ -L$(libdir) -lreadcfg -o $@
+	$(LD) $(LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -o $@
 
 $(bindir)/optical_molasses: \
 $(builddir)/optical_molasses.o \
@@ -67,6 +69,9 @@ $(builddir)/%.o: %.cpp
 	$(CC) -c $(CFLAGS) -I$(includedir) $< -o $@
 
 $(libdir)/libreadcfg.a: $(builddir)/read_config.o
+	$(AR) $(ARFLAGS) $@ $<
+
+$(libdir)/libiotag.a: $(builddir)/iotag.o
 	$(AR) $(ARFLAGS) $@ $<
 
 clean:
