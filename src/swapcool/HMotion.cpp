@@ -67,6 +67,22 @@ std::complex<double> HMotion::partialtr_n(
     return tr;
 }
 
+std::complex<double> HMotion::purity(
+    const std::vector<std::complex<double>>& rho_c) const {
+    std::complex<double> tr = 0;
+    for(unsigned nouter = 0; nouter < nint; ++nouter) {
+        for(int kouter = -kmax; kouter <= kmax; ++kouter) {
+            for(unsigned ninner = 0; ninner < nint; ++ninner) {
+                for(int kinner = -kmax; kinner <= kmax; ++kinner) {
+                    tr += rho_c[subidx(nouter, kouter, ninner, kinner)]
+                        * rho_c[subidx(ninner, kinner, nouter, kouter)];
+                }
+            }
+        }
+    }
+    return tr;
+}
+
 std::complex<double> HMotion::haction(double gt,
     const std::vector<std::complex<double>>& rho_c,
     unsigned nl, int kl, unsigned nr, int kr) const {

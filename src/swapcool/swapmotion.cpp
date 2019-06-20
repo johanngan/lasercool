@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
     // Column order is t, |rho11|, |rho22|, |rho33|
     std::ofstream outfile(ofname);
     // Write table header
-    outfile << "t |rho11| |rho22| |rho33| tr(rho)";
+    outfile << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
     for(int k = 0; k <= hamil.kmax; ++k) {
         outfile << " |k" << k << "|";
     }
@@ -63,7 +63,8 @@ int main(int argc, char** argv) {
             << " " << std::abs(hamil.partialtr_k(rho, 0))
             << " " << std::abs(hamil.partialtr_k(rho, 1))
             << " " << std::abs(hamil.partialtr_k(rho, 2))
-            << " " << std::abs(hamil.totaltr(rho));
+            << " " << std::abs(hamil.totaltr(rho))
+            << " " << std::abs(hamil.purity(rho));
             double krms = 0;    // RMS k value
             for(int k = 0; k <= hamil.kmax; ++k) {
                 auto ktr = hamil.partialtr_n(rho, k);

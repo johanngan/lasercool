@@ -33,6 +33,9 @@ struct HMotion : public HSwap {
     // Partial trace over n for a fixed k
     std::complex<double> partialtr_n(const std::vector<std::complex<double>>&,
         int) const;
+    
+    // Trace of rho^2
+    std::complex<double> purity(const std::vector<std::complex<double>>&) const;
 
     // The action of the Hamiltonian on the density matrix, returns a single
     // component of H*rho, enumerated as in subidx()
