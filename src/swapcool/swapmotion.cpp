@@ -8,6 +8,7 @@ const std::string OUTPUT_DIR = "output/swapcool/swapmotion";
 const std::string RHO_OUTFILEBASE = "rho.out";
 const std::string CYCLE_OUTFILEBASE = "cycles.out";
 const std::string KDIST_OUTFILEBASE = "kdist.out";
+const std::string KDIST_FINAL_OUTFILEBASE = "kdist_final.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -63,6 +64,10 @@ int main(int argc, char** argv) {
         KDIST_OUTFILEBASE, oftag_ss.str()),
         OUTPUT_DIR
     ));
+    std::ofstream kdistfinalout(fullfile(tag_filename(
+        KDIST_FINAL_OUTFILEBASE, oftag_ss.str()),
+        OUTPUT_DIR
+    ));
 
     // Write the solution in SI units
     // Column order is t, |rho11|, |rho22|, |rho33|
@@ -106,4 +111,16 @@ int main(int argc, char** argv) {
     }
     rho_out.close();
     kdistout.close();
+
+    // Output just the final k distribution for convenience
+    kdistfinalout << "k P(k) P(n = 0, k), P(n = 1, k), P(n = 2, k)" << std::endl;
+    auto rho = hamil.density_matrix(
+        rho_c_solution.back().first, rho_c_solution.back().second);
+    for(int k = -hamil.kmax; k <= hamil.kmax; ++k) {
+        kdistfinalout << " " << k << " " << std::real(hamil.partialtr_n(rho, k))
+            << " " << std::real(rho[hamil.subidx(0, k, 0, k)])
+            << " " << std::real(rho[hamil.subidx(1, k, 1, k)])
+            << " " << std::real(rho[hamil.subidx(2, k, 2, k)])
+            << std::endl;
+    }
 }
