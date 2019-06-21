@@ -19,7 +19,9 @@ cmap = cm.jet
 data = np.loadtxt(fname, skiprows=skiprows, usecols=usecols)
 
 # Convert from tall format to meshgrid format
-X, Y = np.meshgrid(np.unique(data[:, 0]), np.unique(data[:, 1]))
+y = np.unique(data[:, 1])
+x = data[::len(y), 0]
+X, Y = np.meshgrid(x, y)
 Z = np.reshape(data[:, 2], X.shape, order='F')
 
 plt.pcolormesh(X, Y, Z, cmap=cmap)
