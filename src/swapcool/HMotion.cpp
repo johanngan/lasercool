@@ -114,27 +114,28 @@ std::complex<double> HMotion::haction(double gt,
 std::complex<double> HMotion::decayterm(
     const std::vector<std::complex<double>>& rho_c,
     unsigned nl, int kl, unsigned nr, int kr) const {
-    if(nl == nr && kl == kr) {
+    // On the block diagonal
+    if(nl == nr) {
         switch(nl) {
             case 0:
-                return (1 - branching_ratio)*rho_c[subidx(2, kl, 2, kl)];
+                return (1 - branching_ratio)*rho_c[subidx(2, kl, 2, kr)];
             case 1:
             {
                 // Approximate anisotropic dipole radiation pattern
-                std::complex<double> diprad = 0.6 * rho_c[subidx(2, kl, 2, kl)];
-                if(kl - 1 >= -kmax) {
-                    diprad += 0.2 * rho_c[subidx(2, kl-1, 2, kl-1)];
+                std::complex<double> diprad = 0.6 * rho_c[subidx(2, kl, 2, kr)];
+                if(kl-1 >= -kmax && kr-1 >= -kmax) {
+                    diprad += 0.2 * rho_c[subidx(2, kl-1, 2, kr-1)];
                 }
-                if(kl + 1 <= kmax) {
-                    diprad += 0.2 * rho_c[subidx(2, kl+1, 2, kl+1)];
+                if(kl+1 <= kmax && kr+1 <= kmax) {
+                    diprad += 0.2 * rho_c[subidx(2, kl+1, 2, kr+1)];
                 }
                 return branching_ratio * diprad;
             }
-            case 2:
-                return -rho_c[subidx(2, kl, 2, kl)];
+            case 2: // Double decay of coherences within excited state
+                return -rho_c[subidx(2, kl, 2, kr)];
         }
     } else if(nl == 2 || nr == 2) {
-        // Exponential decay of coherences with excited state
+        // Exponential decay of coherences between excited state and lower state
         return -0.5*rho_c[subidx(nl, kl, nr, kr)];
     }
     return 0;
