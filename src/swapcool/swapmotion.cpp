@@ -44,7 +44,8 @@ int main(int argc, char** argv) {
         CYCLE_OUTFILEBASE, oftag_ss.str()),
         OUTPUT_DIR
     ));
-    for(double gt = 0; gt < duration_by_decay; gt += 1e-3) {
+    for(double gt = 0; gt < duration_by_decay;
+        gt += 1./(100*hamil.detun_freq_per_decay)) {
         cyclesout << gt << " " << hamil.rabi_softswitch(gt) << " "
         << hamil.detun_per_decay(gt) << " " << hamil.cumulative_phase(gt)
         << std::endl;
