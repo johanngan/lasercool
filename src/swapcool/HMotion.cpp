@@ -5,7 +5,7 @@ template<typename T>
 inline T sqr(T x) {return x*x;}
 
 HMotion::HMotion(std::string fname):HSwap(fname), SPEED_OF_LIGHT(299792458),
-    nint(3) {
+    stationary_decay_prob(0.6), nint(3) {
     double decay_rate, mass, kmax_double;
     load_params(fname,
         {
@@ -122,12 +122,15 @@ std::complex<double> HMotion::decayterm(
             case 1:
             {
                 // Approximate anisotropic dipole radiation pattern
-                std::complex<double> diprad = 0.6 * rho_c[subidx(2, kl, 2, kr)];
+                std::complex<double> diprad = 
+                    stationary_decay_prob * rho_c[subidx(2, kl, 2, kr)];
                 if(kl-1 >= -kmax && kr-1 >= -kmax) {
-                    diprad += 0.2 * rho_c[subidx(2, kl-1, 2, kr-1)];
+                    diprad += (1-stationary_decay_prob)/2
+                        * rho_c[subidx(2, kl-1, 2, kr-1)];
                 }
                 if(kl+1 <= kmax && kr+1 <= kmax) {
-                    diprad += 0.2 * rho_c[subidx(2, kl+1, 2, kr+1)];
+                    diprad += (1-stationary_decay_prob)/2
+                        * rho_c[subidx(2, kl+1, 2, kr+1)];
                 }
                 return branching_ratio * diprad;
             }

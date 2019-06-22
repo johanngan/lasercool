@@ -8,6 +8,8 @@
 // including interaction with the laser and also motional states
 struct HMotion : public HSwap {
     const double SPEED_OF_LIGHT;
+    // probability to decay from excited state without changing momentum
+    double stationary_decay_prob;
     unsigned nint;  // number of internal states
     int kmax;   // maximum k value (assumed positive)
     double recoil_freq_per_decay;
