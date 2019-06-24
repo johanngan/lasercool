@@ -9,6 +9,10 @@ const std::string RHO_OUTFILEBASE = "rho.out";
 const std::string CYCLE_OUTFILEBASE = "cycles.out";
 const std::string KDIST_OUTFILEBASE = "kdist.out";
 const std::string KDIST_FINAL_OUTFILEBASE = "kdist_final.out";
+// Approximate number of solution points to output per sawtooth cycle.
+// Only approximate because adaptive time steps make it hard to divide things
+// exactly
+const double APPROX_OUTPUT_PTS_PER_CYCLE = 1e3;
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
@@ -50,6 +54,10 @@ int main(int argc, char** argv) {
         << "    Stepper tolerance: " << tol << std::endl
         << std::endl;
 
+    // Approximate gamma*dt between output points
+    double output_gdt = 1. /
+        (APPROX_OUTPUT_PTS_PER_CYCLE * hamil.detun_freq_per_decay);
+
     // Form output files
     std::ostringstream oftag_ss;
     oftag_ss << std::setprecision(OUTFILENAME_PRECISION)
@@ -64,8 +72,7 @@ int main(int argc, char** argv) {
         CYCLE_OUTFILEBASE, oftag_ss.str()),
         OUTPUT_DIR
     ));
-    for(double gt = 0; gt < duration_by_decay;
-        gt += 1./(100*hamil.detun_freq_per_decay)) {
+    for(double gt = 0; gt < duration_by_decay; gt += output_gdt) {
         cyclesout << gt << " " << hamil.rabi_softswitch(gt) << " "
         << hamil.detun_per_decay(gt) << " " << hamil.cumulative_phase(gt)
         << std::endl;
@@ -143,14 +150,24 @@ int main(int argc, char** argv) {
         rho_c_solution.pop_back();
         
         // Write the solution to file
+        int cur_steps = -1; // Effective number of output steps taken so far
         for(auto point: rho_c_solution) {
             // Get the actual, global time
             double gt = point.first + cycle/hamil.detun_freq_per_decay;
             double time = gt / decay_rate;
 
-            auto rho = hamil.density_matrix(gt, point.second);
-            write_state_info(rho_out, time, rho, hamil);
-            write_kdist(kdistout, time, rho, hamil);
+            // Get the effective number of output time steps taken so far
+            int cur_steps_new = static_cast<int>(gt / output_gdt);
+            // Only record output if time has advanced by at least the minimum
+            // specified time between outputs
+            if(cur_steps_new > cur_steps) {
+                // Record the new number of output time steps taken
+                cur_steps = cur_steps_new;
+
+                auto rho = hamil.density_matrix(gt, point.second);
+                write_state_info(rho_out, time, rho, hamil);
+                write_kdist(kdistout, time, rho, hamil);
+            }
         }
     }
     std::cout << std::endl;
