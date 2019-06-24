@@ -43,7 +43,8 @@ int main(int argc, char** argv) {
         << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
         << "    Initial momentum state: " << init_k << std::endl
         << "    Maximum momentum state: " << hamil.kmax << std::endl
-        << "    Stepper tolerance: " << tol << std::endl;
+        << "    Stepper tolerance: " << tol << std::endl
+        << std::endl;
 
     // Form output files
     std::ostringstream oftag_ss;
@@ -113,6 +114,9 @@ int main(int argc, char** argv) {
     ///
 
     for(int cycle = 0; cycle < nfullcycles + has_partial_cycle; ++cycle) {
+        std::cout << "\rProgress: running cycle " << cycle + 1
+            << "/" << nfullcycles + has_partial_cycle << std::flush;
+
         // Determine the final local cycle time to solve until
         double endtime = std::min(
             duration_by_decay, (cycle+1)/hamil.detun_freq_per_decay)
@@ -141,9 +145,8 @@ int main(int argc, char** argv) {
             write_state_info(rho_out, time, rho, hamil);
             write_kdist(kdistout, time, rho, hamil);
         }
-
-        std::cout << "Completed cycle " << cycle << std::endl;
     }
+    std::cout << std::endl;
 
     ///
     std::chrono::duration<double> total_seconds =
