@@ -65,41 +65,109 @@ int main(int argc, char** argv) {
         OUTPUT_DIR
     ));
 
-    // Solve the system
-    std::vector<std::complex<double>> rho_c0(hamil.nmat());
-    // Initialize all in one k-state
-    rho_c0[hamil.subidx(1, init_k, 1, init_k)] = 1;
-
-    // Solve the system in natural units with an adaptive RK method
-    auto rho_c_solution = timestepping::odesolve(hamil, rho_c0,
-        duration_by_decay, timestepping::AdaptiveRK(tol));
-
-    // Write the solution in SI units
-    // Write table header
+    // Write table headers
     rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
     for(int k = 0; k <= hamil.kmax; ++k) {
         rho_out << " |k" << k << "|";
     }
     rho_out << " |k_rms|";
     rho_out << std::endl;
-    // Write table header
     std::string kdist_header = "t k P(k) P(n = 0, k), P(n = 1, k), P(n = 2, k)";
     kdistout << kdist_header << std::endl;
-    for(auto point: rho_c_solution) {
-        auto rho = hamil.density_matrix(point.first, point.second);
-        double time = point.first / decay_rate;
-        write_state_info(rho_out, time, rho, hamil);
-        write_kdist(kdistout, time, rho, hamil);
+    kdistfinalout << kdist_header << std::endl;
+
+    // Solve the system
+    // Figure out how many cycles to run.
+    double nfullcycles_double;
+    double cycle_remain = modf(
+        hamil.detun_freq_per_decay*duration_by_decay, &nfullcycles_double);
+    int nfullcycles = static_cast<int>(nfullcycles_double);
+    bool has_partial_cycle = (cycle_remain != 0);
+
+    std::vector<std::complex<double>> rho_c(hamil.nmat());
+    // Initialize all in one k-state
+    rho_c[hamil.subidx(1, init_k, 1, init_k)] = 1;
+    // For holding the time of the popped final entry of the solution,
+    // to be used after loop termination
+    double solution_endgt = 0;
+    // Solve cycle-by-cycle. Add an extra iteration if a partial cycle is
+    // necessary
+    for(int cycle = 0; cycle < nfullcycles + has_partial_cycle; ++cycle) {
+        // Determine the final local cycle time to solve until
+        double endtime = std::min(
+            duration_by_decay, (cycle+1)/hamil.detun_freq_per_decay)
+            - cycle/hamil.detun_freq_per_decay;
+        
+        // Prepare the density matrix for a new cycle
+        initialize_cycle(rho_c, hamil);
+        // Solve a full/partial system cycle in natural units with adaptive RK
+        auto rho_c_solution = timestepping::odesolve(hamil, rho_c,
+            endtime, timestepping::AdaptiveRK(tol));
+
+        // Save the final rho_c for the next cycle        
+        std::tie(solution_endgt, rho_c) = rho_c_solution.back();
+        solution_endgt += cycle/hamil.detun_freq_per_decay;
+        // Don't write the final state to file, since it'll be modified and
+        // included in the next iteration, or written after loop exit
+        rho_c_solution.pop_back();
+        
+        // Write the solution to file
+        for(auto point: rho_c_solution) {
+            // Get the actual, global time
+            double gt = point.first + cycle/hamil.detun_freq_per_decay;
+            double time = gt / decay_rate;
+
+            auto rho = hamil.density_matrix(gt, point.second);
+            write_state_info(rho_out, time, rho, hamil);
+            write_kdist(kdistout, time, rho, hamil);
+        }
+
+        std::cout << "Completed cycle " << cycle << std::endl;
     }
+    // Write the final state to file
+    double solution_endtime = solution_endgt / decay_rate;
+    auto rhofinal = hamil.density_matrix(solution_endtime, rho_c);
+    write_state_info(rho_out, solution_endtime, rhofinal, hamil);
+    write_kdist(kdistout, solution_endtime, rhofinal, hamil);
     rho_out.close();
     kdistout.close();
 
-    // Output just the final k distribution for convenience
-    kdistfinalout << kdist_header << std::endl;
-    auto rho = hamil.density_matrix(
-        rho_c_solution.back().first, rho_c_solution.back().second);
-    write_kdist(kdistfinalout, rho_c_solution.back().first / decay_rate,
-        rho, hamil);
+    // Output just the final k distribution to a separate file for convenience
+    write_kdist(kdistfinalout, solution_endtime, rhofinal, hamil);
+    kdistfinalout.close();
+}
+
+void initialize_cycle(std::vector<std::complex<double>>& rho,
+    const HMotion& hamil) {
+    for(int kl = -hamil.kmax; kl <= hamil.kmax; ++kl) {
+        for(int kr = -hamil.kmax; kr <= hamil.kmax; ++kr) {
+            // Excited state population and intra-excited-state coherences
+            // distribute between the lower energy states
+            rho[hamil.subidx(0, kl, 0, kr)] += (1 - hamil.branching_ratio)
+                * rho[hamil.subidx(2, kl, 2, kr)];
+            rho[hamil.subidx(1, kl, 1, kr)] +=
+                hamil.stationary_decay_prob*hamil.branching_ratio
+                * rho[hamil.subidx(2, kl, 2, kr)];
+            if(kl - 1 >= -hamil.kmax && kr - 1 >= -hamil.kmax) {
+                rho[hamil.subidx(1, kl-1, 1, kr-1)] +=
+                    (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
+                    * rho[hamil.subidx(2, kl, 2, kr)];
+            }
+            if(kl + 1 <= hamil.kmax && kr + 1 <= hamil.kmax) {
+                rho[hamil.subidx(1, kl+1, 1, kr+1)] +=
+                    (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
+                    * rho[hamil.subidx(2, kl, 2, kr)];
+            }
+
+            // Excited state and excited-state coherences decay to 0
+            rho[hamil.subidx(2, kl, 2, kr)] = 0;
+            for(unsigned n = 0; n < 2; ++n) {
+                rho[hamil.subidx(n, kl, 2, kr)] = 0;
+                rho[hamil.subidx(2, kl, n, kr)] = 0;
+            }
+        }
+    }
+    return;
 }
 
 void write_state_info(std::ofstream& outfile, double t,
