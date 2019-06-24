@@ -43,6 +43,9 @@ int main(int argc, char** argv) {
         << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
         << "    Initial momentum state: " << init_k << std::endl
         << "    Maximum momentum state: " << hamil.kmax << std::endl
+        << "    Duration: " << duration_by_decay << " ("
+        << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
+        << std::endl
         << "    Stepper tolerance: " << tol << std::endl
         << std::endl;
 
