@@ -2,6 +2,7 @@
 #define HMOTION_HPP_
 
 #include "HSwap.hpp"
+#include <exception>
 
 // Hamiltonian for sawtooth laser frequency oscillating about
 // some transition frequency, under the rotating wave approximation,
@@ -11,7 +12,7 @@ struct HMotion : public HSwap {
     // probability to decay from excited state without changing momentum
     double stationary_decay_prob;
     unsigned nint;  // number of internal states
-    int kmax;   // maximum k value (assumed positive)
+    int kmax, kmin;   // range of tracked k values
     double recoil_freq_per_decay;
 
     HMotion(std::string);

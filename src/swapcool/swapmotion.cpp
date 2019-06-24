@@ -42,7 +42,8 @@ int main(int argc, char** argv) {
         << "    Rabi frequency: " << hamil.rabi_freq_per_decay << std::endl
         << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
         << "    Initial momentum state: " << init_k << std::endl
-        << "    Maximum momentum state: " << hamil.kmax << std::endl
+        << "    Momentum state range: [" << hamil.kmin << ", " << hamil.kmax
+        << "]" << std::endl
         << "    Duration: " << duration_by_decay << " ("
         << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
         << std::endl
@@ -86,7 +87,10 @@ int main(int argc, char** argv) {
 
     // Write table headers
     rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
-    for(int k = 0; k <= hamil.kmax; ++k) {
+    for(int k = (hamil.kmax*hamil.kmin <= 0 ?
+            0 : std::min(std::abs(hamil.kmax), std::abs(hamil.kmin)));
+        k <= std::max(std::abs(hamil.kmax), std::abs(hamil.kmin));
+        ++k) {
         rho_out << " |k" << k << "|";
     }
     rho_out << " |k_rms|";
@@ -173,8 +177,8 @@ int main(int argc, char** argv) {
 
 void initialize_cycle(std::vector<std::complex<double>>& rho,
     const HMotion& hamil) {
-    for(int kl = -hamil.kmax; kl <= hamil.kmax; ++kl) {
-        for(int kr = -hamil.kmax; kr <= hamil.kmax; ++kr) {
+    for(int kl = hamil.kmin; kl <= hamil.kmax; ++kl) {
+        for(int kr = hamil.kmin; kr <= hamil.kmax; ++kr) {
             // Excited state population and intra-excited-state coherences
             // distribute between the lower energy states
             rho[hamil.subidx(0, kl, 0, kr)] += (1 - hamil.branching_ratio)
@@ -182,7 +186,7 @@ void initialize_cycle(std::vector<std::complex<double>>& rho,
             rho[hamil.subidx(1, kl, 1, kr)] +=
                 hamil.stationary_decay_prob*hamil.branching_ratio
                 * rho[hamil.subidx(2, kl, 2, kr)];
-            if(kl - 1 >= -hamil.kmax && kr - 1 >= -hamil.kmax) {
+            if(kl - 1 >= hamil.kmin && kr - 1 >= hamil.kmin) {
                 rho[hamil.subidx(1, kl-1, 1, kr-1)] +=
                     (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
                     * rho[hamil.subidx(2, kl, 2, kr)];
@@ -213,9 +217,16 @@ void write_state_info(std::ofstream& outfile, double t,
         << " " << std::real(hamil.totaltr(rho))
         << " " << std::real(hamil.purity(rho));
     double krms = 0;    // RMS k value
-    for(int k = 0; k <= hamil.kmax; ++k) {
-        auto ktr = hamil.partialtr_n(rho, k);
-        if(k != 0) {
+    for(int k = (hamil.kmax*hamil.kmin <= 0 ?
+            0 : std::min(std::abs(hamil.kmax), std::abs(hamil.kmin)));
+        k <= std::max(std::abs(hamil.kmax), std::abs(hamil.kmin));
+        ++k) {
+        std::complex<double> ktr;
+        if(k >= hamil.kmin && k <= hamil.kmax) {
+            ktr += hamil.partialtr_n(rho, k);
+        }
+        if(k != 0 && -k >= hamil.kmin && -k <= hamil.kmax) {
+            // The other sign
             ktr += hamil.partialtr_n(rho, -k);
         }
         outfile << " " << std::real(ktr);
@@ -226,7 +237,7 @@ void write_state_info(std::ofstream& outfile, double t,
 }
 void write_kdist(std::ofstream& outfile, double t,
     const std::vector<std::complex<double>>& rho, const HMotion& hamil) {
-    for(int k = -hamil.kmax; k <= hamil.kmax; ++k) {
+    for(int k = hamil.kmin; k <= hamil.kmax; ++k) {
         outfile << t
             << " " << k << " " << std::real(hamil.partialtr_n(rho, k))
             << " " << std::real(rho[hamil.subidx(0, k, 0, k)])
