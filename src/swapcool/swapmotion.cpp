@@ -33,12 +33,26 @@ int main(int argc, char** argv) {
     // d(rho)/d(Gamma*t)
     HMotion hamil(cfg_file);
 
+    std::cout << "In units of decay rate when applicable:" << std::endl
+        << "    Decay rate: " << decay_rate << std::endl
+        << "    Decay: " << (hamil.enable_decay ? "on" : "off") << std::endl
+        << "    Branching ratio: " << hamil.branching_ratio << std::endl
+        << "    Delta amplitude: " << hamil.detun_amp_per_decay << std::endl
+        << "    Sawtooth frequency: " << hamil.detun_freq_per_decay << std::endl
+        << "    Rabi frequency: " << hamil.rabi_freq_per_decay << std::endl
+        << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
+        << "    Initial momentum state: " << init_k << std::endl
+        << "    Maximum momentum state: " << hamil.kmax << std::endl;
+
     // Form output files
     std::ostringstream oftag_ss;
     oftag_ss << std::setprecision(OUTFILENAME_PRECISION)
         << "A" << hamil.detun_amp_per_decay
         << "_f" << hamil.detun_freq_per_decay
         << "_Omega" << hamil.rabi_freq_per_decay
+        << "_recoil" << hamil.recoil_freq_per_decay
+        << "_" << (hamil.enable_decay ? "" : "no") << "decay"
+        << "_B" << hamil.branching_ratio
         << "_k" << init_k;
     std::ofstream cyclesout(fullfile(tag_filename(
         CYCLE_OUTFILEBASE, oftag_ss.str()),
