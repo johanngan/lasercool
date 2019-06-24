@@ -42,7 +42,8 @@ int main(int argc, char** argv) {
         << "    Rabi frequency: " << hamil.rabi_freq_per_decay << std::endl
         << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
         << "    Initial momentum state: " << init_k << std::endl
-        << "    Maximum momentum state: " << hamil.kmax << std::endl;
+        << "    Maximum momentum state: " << hamil.kmax << std::endl
+        << "    Stepper tolerance: " << tol << std::endl;
 
     // Form output files
     std::ostringstream oftag_ss;
