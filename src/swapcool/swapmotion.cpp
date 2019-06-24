@@ -107,6 +107,11 @@ int main(int argc, char** argv) {
     double solution_endgt = 0;
     // Solve cycle-by-cycle. Add an extra iteration if a partial cycle is
     // necessary
+
+    /// TIMING
+    auto start = std::chrono::system_clock::now();
+    ///
+
     for(int cycle = 0; cycle < nfullcycles + has_partial_cycle; ++cycle) {
         // Determine the final local cycle time to solve until
         double endtime = std::min(
@@ -139,6 +144,14 @@ int main(int argc, char** argv) {
 
         std::cout << "Completed cycle " << cycle << std::endl;
     }
+
+    ///
+    std::chrono::duration<double> total_seconds =
+        std::chrono::system_clock::now() - start;
+    std::cout << "Simulation time: " << total_seconds.count() << " s"
+        << std::endl;
+    ///
+
     // Write the final state to file
     double solution_endtime = solution_endgt / decay_rate;
     auto rhofinal = hamil.density_matrix(solution_endtime, rho_c);

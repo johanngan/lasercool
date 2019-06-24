@@ -7,6 +7,7 @@
 #include <fstream>
 #include <complex>
 #include <vector>
+#include <chrono>
 #include "HMotion.hpp"
 #include "lasercool/readcfg.hpp"
 #include "lasercool/iotag.hpp"
