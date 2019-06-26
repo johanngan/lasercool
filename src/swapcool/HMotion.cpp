@@ -18,11 +18,10 @@ HMotion::HMotion(std::string fname):HSwap(fname), SPEED_OF_LIGHT(299792458),
     recoil_freq_per_decay = HBAR*sqr(k_photon_per_decay)*decay_rate/(2*mass);
 }
 
-std::complex<double> HMotion::haction(double gt,
+std::complex<double> HMotion::haction(
     const std::vector<std::complex<double>>& rho_c,
-    unsigned nl, int kl, unsigned nr, int kr) {
-    // Update/read cache
-    refresh_cache(gt);
+    unsigned nl, int kl, unsigned nr, int kr) const {
+    // Read from cache
     double cachehalfdetun = cache[halfdetun], cachehalfrabi = cache[halfrabi];
 
     std::complex<double> val = 0;
@@ -103,14 +102,16 @@ std::vector<std::complex<double>> HMotion::density_matrix(
 
 std::vector<std::complex<double>> HMotion::operator()(double gt,
     const std::vector<std::complex<double>>& rho_c) {
+    refresh_cache(gt);  // Update cache
+
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     std::vector<std::complex<double>> drho_c(rho_c.size());
     for(const auto& sub: handler.idxlist) {
         unsigned nl = std::get<0>(sub), nr = std::get<2>(sub);
         int kl = std::get<1>(sub), kr = std::get<3>(sub);
         handler.at(drho_c, nl, kl, nr, kr) =
-            -1i*haction(gt, rho_c, nl, kl, nr, kr)
-            +1i*std::conj(haction(gt, rho_c, nr, kr, nl, kl))
+            -1i*haction(rho_c, nl, kl, nr, kr)
+            +1i*std::conj(haction(rho_c, nr, kr, nl, kl))
             + decayterm(rho_c, nl, kl, nr, kr) * enable_decay;
     }
     return drho_c;

@@ -18,9 +18,8 @@ struct HMotion : public HSwap {
 
     // The action of the Hamiltonian on the density matrix, returns a single
     // component of H*rho
-    std::complex<double> haction(double,
-        const std::vector<std::complex<double>>&,
-        unsigned, int, unsigned, int);
+    std::complex<double> haction(const std::vector<std::complex<double>>&,
+        unsigned, int, unsigned, int) const;
     
     // The spontaneous decay part of the derivative (Lindblad superoperator)
     std::complex<double> decayterm(const std::vector<std::complex<double>>&,
