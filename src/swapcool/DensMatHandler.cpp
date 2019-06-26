@@ -19,18 +19,25 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     }
     
     // Set up index maps
-    // Use a naive, dense storage for now
-    // TODO: change to efficient storage method
-    idxmap.reserve(nstates()*nstates());
+    // Store only the upper triangle, and also exclude the coherences with
+    // the ground state
+    int kstates = kmax - kmin + 1;
+    idxmap.reserve(3*kstates*(kstates+1)/2 + kstates*kstates);
     idxlist.reserve(idxmap.size());
-    for(unsigned nl = 0; nl < nint; ++nl) {
+    // On the upper triangles of the block diagonal
+    for(unsigned n = 0; n < nint; ++n) {
         for(int kl = kmin; kl <= kmax; ++kl) {
-            for(unsigned nr = 0; nr < nint; ++nr) {
-                for(int kr = kmin; kr <= kmax; ++kr) {
-                    idxmap[subidx(nl, kl, nr, kr)] = subidx(nl, kl, nr, kr);
-                    idxlist.push_back({nl, kl, nr, kr});
-                }
+            for(int kr = kl; kr <= kmax; ++kr) {
+                idxmap[subidx(n, kl, n, kr)] = idxmap.size();
+                idxlist.push_back({n, kl, n, kr});
             }
+        }
+    }
+    // The upper-triangular coherences between the high and low energy states
+    for(int kl = kmin; kl <= kmax; ++kl) {
+        for(int kr = kmin; kr <= kmax; ++kr) {
+            idxmap[subidx(1, kl, 2, kr)] = idxmap.size();
+            idxlist.push_back({1, kl, 2, kr});
         }
     }
 }
@@ -54,7 +61,15 @@ bool DensMatHandler::has(unsigned nl, int kl, unsigned nr, int kr) const {
 std::complex<double> DensMatHandler::ele(
     const std::vector<std::complex<double>>& rho,
     unsigned nl, int kl, unsigned nr, int kr) const {
-    return rho[idxmap.at(subidx(nl, kl, nr, kr))];
+    // Directly stored
+    if(has(nl, kl, nr, kr)) {
+        return rho[idxmap.at(subidx(nl, kl, nr, kr))];
+    } else if(has(nr, kr, nl, kl)) { // Try the transpose
+        // Density matrix must be Hermitian
+        return std::conj(rho[idxmap.at(subidx(nr, kr, nl, kl))]);
+    }
+    // If nothing is found, must be a 0 entry (coherence with ground state)
+    return 0;
 }
 std::complex<double>& DensMatHandler::at(
     std::vector<std::complex<double>>& rho,
