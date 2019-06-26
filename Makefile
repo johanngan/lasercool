@@ -58,12 +58,16 @@ $(builddir)/DensMatHandler.o
 $(builddir)/optical_molasses.o: optical_molasses.cpp mathutil.hpp RandProcesses.hpp
 $(builddir)/PhysicalParams.o: PhysicalParams.cpp mathutil.hpp
 $(builddir)/swapint.o: swapint.cpp timestepping.hpp
-$(builddir)/swapmotion.o: swapmotion.cpp timestepping.hpp
+$(builddir)/swapmotion.o: swapmotion.cpp timestepping.hpp HMotion.hpp DensMatHandler.hpp
+$(builddir)/HMotion.o: HMotion.cpp DensMatHandler.hpp
 
 $(builddir)/optical_molasses.o:
 	$(CC) -c $(CFLAGS) -I$(includedir) -I$(vendordir)/pcg-cpp-0.98/include $< -o $@
 
-$(builddir)/PhysicalParams.o $(builddir)/swapint.o $(builddir)/swapmotion.o:
+$(builddir)/PhysicalParams.o \
+$(builddir)/swapint.o \
+$(builddir)/swapmotion.o \
+$(builddir)/HMotion.o:
 	$(CC) -c $(CFLAGS) -I$(includedir) $< -o $@
 
 $(builddir)/%.o: %.cpp
