@@ -52,7 +52,8 @@ $(builddir)/HSwap.o
 $(bindir)/swapmotion: \
 $(builddir)/swapmotion.o \
 $(builddir)/HMotion.o \
-$(builddir)/HSwap.o
+$(builddir)/HSwap.o \
+$(builddir)/DensMatHandler.o
 
 $(builddir)/optical_molasses.o: optical_molasses.cpp mathutil.hpp RandProcesses.hpp
 $(builddir)/PhysicalParams.o: PhysicalParams.cpp mathutil.hpp

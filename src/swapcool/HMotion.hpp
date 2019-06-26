@@ -2,7 +2,7 @@
 #define HMOTION_HPP_
 
 #include "HSwap.hpp"
-#include <exception>
+#include "DensMatHandler.hpp"
 
 // Hamiltonian for sawtooth laser frequency oscillating about
 // some transition frequency, under the rotating wave approximation,
@@ -11,37 +11,13 @@ struct HMotion : public HSwap {
     const double SPEED_OF_LIGHT;
     // probability to decay from excited state without changing momentum
     double stationary_decay_prob;
-    unsigned nint;  // number of internal states
-    int kmax, kmin;   // range of tracked k values
     double recoil_freq_per_decay;
+    DensMatHandler handler;
 
     HMotion(std::string);
-    // Convert state subscripts to linear indexes, enumerated as |n, k>
-    unsigned stateidx(unsigned, int) const;
-    // Number of entries in a state
-    unsigned nstates() const;
-    // Convert state subscripts to linear indexes in the density matrix,
-    // enumerated as |n-left, k-left><n-right, k-right|
-    unsigned subidx(unsigned, int, unsigned, int) const;
-    // Number of entries in the matrix
-    unsigned nmat() const;
-
-    // Total trace
-    std::complex<double> totaltr(const std::vector<std::complex<double>>&) const;
-
-    // Partial trace over k for a fixed n
-    std::complex<double> partialtr_k(const std::vector<std::complex<double>>&,
-        unsigned) const;
-
-    // Partial trace over n for a fixed k
-    std::complex<double> partialtr_n(const std::vector<std::complex<double>>&,
-        int) const;
-    
-    // Trace of rho^2
-    std::complex<double> purity(const std::vector<std::complex<double>>&) const;
 
     // The action of the Hamiltonian on the density matrix, returns a single
-    // component of H*rho, enumerated as in subidx()
+    // component of H*rho
     std::complex<double> haction(double,
         const std::vector<std::complex<double>>&,
         unsigned, int, unsigned, int) const;

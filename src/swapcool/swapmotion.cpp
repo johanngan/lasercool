@@ -46,7 +46,8 @@ int main(int argc, char** argv) {
         << "    Rabi frequency: " << hamil.rabi_freq_per_decay << std::endl
         << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
         << "    Initial momentum state: " << init_k << std::endl
-        << "    Momentum state range: [" << hamil.kmin << ", " << hamil.kmax
+        << "    Momentum state range: ["
+            << hamil.handler.kmin << ", " << hamil.handler.kmax
         << "]" << std::endl
         << "    Duration: " << duration_by_decay << " ("
         << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
@@ -94,9 +95,11 @@ int main(int argc, char** argv) {
 
     // Write table headers
     rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
-    for(int k = (hamil.kmax*hamil.kmin <= 0 ?
-            0 : std::min(std::abs(hamil.kmax), std::abs(hamil.kmin)));
-        k <= std::max(std::abs(hamil.kmax), std::abs(hamil.kmin));
+    for(int k = (hamil.handler.kmax*hamil.handler.kmin <= 0 ?
+            0 : std::min(std::abs(hamil.handler.kmax),
+                         std::abs(hamil.handler.kmin)));
+        k <= std::max(std::abs(hamil.handler.kmax),
+                      std::abs(hamil.handler.kmin));
         ++k) {
         rho_out << " |k" << k << "|";
     }
@@ -114,9 +117,9 @@ int main(int argc, char** argv) {
     int nfullcycles = static_cast<int>(nfullcycles_double);
     bool has_partial_cycle = (cycle_remain != 0);
 
-    std::vector<std::complex<double>> rho_c(hamil.nmat());
+    std::vector<std::complex<double>> rho_c(hamil.handler.idxmap.size());
     // Initialize all in one k-state
-    rho_c[hamil.subidx(1, init_k, 1, init_k)] = 1;
+    hamil.handler.at(rho_c, 1, init_k, 1, init_k) = 1;
     // For holding the time of the popped final entry of the solution,
     // to be used after loop termination
     double solution_endgt = 0;
@@ -165,8 +168,8 @@ int main(int argc, char** argv) {
                 cur_steps = cur_steps_new;
 
                 auto rho = hamil.density_matrix(gt, point.second);
-                write_state_info(rho_out, time, rho, hamil);
-                write_kdist(kdistout, time, rho, hamil);
+                write_state_info(rho_out, time, rho, hamil.handler);
+                write_kdist(kdistout, time, rho, hamil.handler);
             }
         }
     }
@@ -182,43 +185,53 @@ int main(int argc, char** argv) {
     // Write the final state to file
     double solution_endtime = solution_endgt / decay_rate;
     auto rhofinal = hamil.density_matrix(solution_endtime, rho_c);
-    write_state_info(rho_out, solution_endtime, rhofinal, hamil);
-    write_kdist(kdistout, solution_endtime, rhofinal, hamil);
+    write_state_info(rho_out, solution_endtime, rhofinal, hamil.handler);
+    write_kdist(kdistout, solution_endtime, rhofinal, hamil.handler);
     rho_out.close();
     kdistout.close();
 
     // Output just the final k distribution to a separate file for convenience
-    write_kdist(kdistfinalout, solution_endtime, rhofinal, hamil);
+    write_kdist(kdistfinalout, solution_endtime, rhofinal, hamil.handler);
     kdistfinalout.close();
 }
 
 void initialize_cycle(std::vector<std::complex<double>>& rho,
     const HMotion& hamil) {
-    for(int kl = hamil.kmin; kl <= hamil.kmax; ++kl) {
-        for(int kr = hamil.kmin; kr <= hamil.kmax; ++kr) {
+    for(int kl = hamil.handler.kmin; kl <= hamil.handler.kmax; ++kl) {
+        for(int kr = hamil.handler.kmin; kr <= hamil.handler.kmax; ++kr) {
             // Excited state population and intra-excited-state coherences
             // distribute between the lower energy states
-            rho[hamil.subidx(0, kl, 0, kr)] += (1 - hamil.branching_ratio)
-                * rho[hamil.subidx(2, kl, 2, kr)];
-            rho[hamil.subidx(1, kl, 1, kr)] +=
-                hamil.stationary_decay_prob*hamil.branching_ratio
-                * rho[hamil.subidx(2, kl, 2, kr)];
-            if(kl - 1 >= hamil.kmin && kr - 1 >= hamil.kmin) {
-                rho[hamil.subidx(1, kl-1, 1, kr-1)] +=
-                    (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
-                    * rho[hamil.subidx(2, kl, 2, kr)];
+            if(hamil.handler.has(0, kl, 0, kr)) {
+                hamil.handler.at(rho, 0, kl, 0, kr) += (1 - hamil.branching_ratio)
+                    * hamil.handler.ele(rho, 2, kl, 2, kr);
             }
-            if(kl + 1 <= hamil.kmax && kr + 1 <= hamil.kmax) {
-                rho[hamil.subidx(1, kl+1, 1, kr+1)] +=
+            if(hamil.handler.has(1, kl, 1, kr)) {
+                hamil.handler.at(rho, 1, kl, 1, kr) +=
+                    hamil.stationary_decay_prob*hamil.branching_ratio
+                    * hamil.handler.ele(rho, 2, kl, 2, kr);
+            }
+            if(kl - 1 >= hamil.handler.kmin && kr - 1 >= hamil.handler.kmin
+                && hamil.handler.has(1, kl-1, 1, kr-1)) {
+                hamil.handler.at(rho, 1, kl-1, 1, kr-1) +=
                     (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
-                    * rho[hamil.subidx(2, kl, 2, kr)];
+                    * hamil.handler.ele(rho, 2, kl, 2, kr);
+            }
+            if(kl + 1 <= hamil.handler.kmax && kr + 1 <= hamil.handler.kmax
+                && hamil.handler.has(1, kl+1, 1, kr+1)) {
+                hamil.handler.at(rho, 1, kl+1, 1, kr+1) +=
+                    (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
+                    * hamil.handler.ele(rho, 2, kl, 2, kr);
             }
 
             // Excited state and excited-state coherences decay to 0
-            rho[hamil.subidx(2, kl, 2, kr)] = 0;
-            for(unsigned n = 0; n < 2; ++n) {
-                rho[hamil.subidx(n, kl, 2, kr)] = 0;
-                rho[hamil.subidx(2, kl, n, kr)] = 0;
+            if(hamil.handler.has(2, kl, 2, kr)) {
+                hamil.handler.at(rho, 2, kl, 2, kr) = 0;
+            }
+            if(hamil.handler.has(1, kl, 2, kr)) {
+                hamil.handler.at(rho, 1, kl, 2, kr) = 0;
+            }
+            if(hamil.handler.has(2, kl, 1, kr)) {
+                hamil.handler.at(rho, 2, kl, 1, kr) = 0;
             }
         }
     }
@@ -226,25 +239,25 @@ void initialize_cycle(std::vector<std::complex<double>>& rho,
 }
 
 void write_state_info(std::ofstream& outfile, double t,
-    const std::vector<std::complex<double>>& rho, const HMotion& hamil) {
-    outfile << t
-        << " " << std::real(hamil.partialtr_k(rho, 0))
-        << " " << std::real(hamil.partialtr_k(rho, 1))
-        << " " << std::real(hamil.partialtr_k(rho, 2))
-        << " " << std::real(hamil.totaltr(rho))
-        << " " << std::real(hamil.purity(rho));
+    const std::vector<std::complex<double>>& rho, const DensMatHandler& handler) {
+    outfile << t;
+    for(unsigned n = 0; n < handler.nint; ++n) {
+        outfile << " " << std::real(handler.partialtr_k(rho, n));
+    }
+    outfile << " " << std::real(handler.totaltr(rho))
+        << " " << std::real(handler.purity(rho));
     double krms = 0;    // RMS k value
-    for(int k = (hamil.kmax*hamil.kmin <= 0 ?
-            0 : std::min(std::abs(hamil.kmax), std::abs(hamil.kmin)));
-        k <= std::max(std::abs(hamil.kmax), std::abs(hamil.kmin));
+    for(int k = (handler.kmax*handler.kmin <= 0 ?
+            0 : std::min(std::abs(handler.kmax), std::abs(handler.kmin)));
+        k <= std::max(std::abs(handler.kmax), std::abs(handler.kmin));
         ++k) {
         std::complex<double> ktr;
-        if(k >= hamil.kmin && k <= hamil.kmax) {
-            ktr += hamil.partialtr_n(rho, k);
+        if(k >= handler.kmin && k <= handler.kmax) {
+            ktr += handler.partialtr_n(rho, k);
         }
-        if(k != 0 && -k >= hamil.kmin && -k <= hamil.kmax) {
+        if(k != 0 && -k >= handler.kmin && -k <= handler.kmax) {
             // The other sign
-            ktr += hamil.partialtr_n(rho, -k);
+            ktr += handler.partialtr_n(rho, -k);
         }
         outfile << " " << std::real(ktr);
         krms += std::real(ktr) * k*k;
@@ -253,13 +266,13 @@ void write_state_info(std::ofstream& outfile, double t,
     outfile << std::endl;
 }
 void write_kdist(std::ofstream& outfile, double t,
-    const std::vector<std::complex<double>>& rho, const HMotion& hamil) {
-    for(int k = hamil.kmin; k <= hamil.kmax; ++k) {
-        outfile << t
-            << " " << k << " " << std::real(hamil.partialtr_n(rho, k))
-            << " " << std::real(rho[hamil.subidx(0, k, 0, k)])
-            << " " << std::real(rho[hamil.subidx(1, k, 1, k)])
-            << " " << std::real(rho[hamil.subidx(2, k, 2, k)])
-            << std::endl;
+    const std::vector<std::complex<double>>& rho, const DensMatHandler& handler) {
+    for(int k = handler.kmin; k <= handler.kmax; ++k) {
+        outfile << t << " " << k
+            << " " << std::real(handler.partialtr_n(rho, k));
+        for(unsigned n = 0; n < handler.nint; ++n) {
+            outfile << " " << std::real(handler.ele(rho, n, k, n, k));
+        }
+        outfile << std::endl;
     }
 }
