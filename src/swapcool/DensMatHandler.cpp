@@ -17,11 +17,13 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     if(kmin > kmax) {
         throw std::runtime_error("Min momentum greater than max momentum.");
     }
+    // Calculate state numbers
+    kstates = kmax - kmin + 1;
+    nstates = kstates * nint;
     
     // Set up index maps
     // Store only the upper triangle, and also exclude the coherences with
     // the ground state
-    int kstates = kmax - kmin + 1;
     idxmap.reserve(3*kstates*(kstates+1)/2 + kstates*kstates);
     idxlist.reserve(idxmap.size());
     // On the upper triangles of the block diagonal
@@ -44,14 +46,10 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
 
 unsigned DensMatHandler::stateidx(unsigned n, int k) const {
     // Shift up so the lowest value has index 0
-    int k_idx = k - kmin;
-    return k_idx + (kmax - kmin + 1)*n;
-}
-unsigned DensMatHandler::nstates() const {
-    return (kmax - kmin + 1)*nint;
+    return (k - kmin) + kstates*n;
 }
 unsigned DensMatHandler::subidx(unsigned nl, int kl, unsigned nr, int kr) const {
-    return stateidx(nr, kr) + nstates()*stateidx(nl, kl);
+    return stateidx(nr, kr) + nstates*stateidx(nl, kl);
 }
 
 bool DensMatHandler::has(unsigned nl, int kl, unsigned nr, int kr) const {

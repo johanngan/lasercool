@@ -18,6 +18,8 @@ struct DensMatHandler {
     
     unsigned nint;  // number of internal states
     int kmax, kmin;   // range of tracked k values
+    unsigned kstates;   // number of k states
+    unsigned nstates;   // total number of states (n and k together)
     // Indexes of matrix elements that are actually stored
     // The key is the linear index as determined by subidx()
     // The value is the index of the actual density matrix vector instance
@@ -30,8 +32,6 @@ struct DensMatHandler {
 
     // Convert state subscripts to linear indexes, enumerated as |n, k>
     unsigned stateidx(unsigned, int) const;
-    // Number of entries in a state
-    unsigned nstates() const;
     // Convert state subscripts to linear indexes in the density matrix,
     // enumerated as |n-left, k-left><n-right, k-right|
     unsigned subidx(unsigned, int, unsigned, int) const;
