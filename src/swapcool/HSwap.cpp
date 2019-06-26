@@ -1,6 +1,7 @@
 #include "HSwap.hpp"
 
-HSwap::HSwap(std::string fname):HBAR(1.054571800e-34) {
+HSwap::HSwap(std::string fname):HBAR(1.054571800e-34),
+    cache({0, 0.5*detun_per_decay(0), 0.5*rabi_softswitch(0)}) {
     double decay_rate, low_energy, high_energy;
     load_params(fname,
         {
@@ -39,4 +40,12 @@ double HSwap::cumulative_phase(double gt) const {
             * (transition_angfreq_per_decay
                 + detun_amp_per_decay*(cycle_completion - 1))
         ) / detun_freq_per_decay;
+}
+
+void HSwap::refresh_cache(double gt) {
+    if(gt != cache[cachetime]) {
+        cache[cachetime] = gt;
+        cache[halfdetun] = 0.5*detun_per_decay(gt);
+        cache[halfrabi] = 0.5*rabi_softswitch(gt);
+    }
 }

@@ -20,7 +20,7 @@ struct HMotion : public HSwap {
     // component of H*rho
     std::complex<double> haction(double,
         const std::vector<std::complex<double>>&,
-        unsigned, int, unsigned, int) const;
+        unsigned, int, unsigned, int);
     
     // The spontaneous decay part of the derivative (Lindblad superoperator)
     std::complex<double> decayterm(const std::vector<std::complex<double>>&,
@@ -34,7 +34,7 @@ struct HMotion : public HSwap {
 
     // Derivative operator to be passed to the timestepper
     std::vector<std::complex<double>> operator()(double,
-        const std::vector<std::complex<double>>&) const override;
+        const std::vector<std::complex<double>>&) override;
 };
 
 #endif

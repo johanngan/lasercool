@@ -17,6 +17,10 @@ struct HSwap{
     double rabi_freq_per_decay, detun_amp_per_decay, detun_freq_per_decay;
     double rabi_switch_coeff, rabi_switch_power;
     double transition_angfreq_per_decay;
+    // Cache for expensive calculations within a fixed time
+    std::vector<double> cache;
+    // Keys for cached variables
+    enum cache_key {cachetime, halfdetun, halfrabi};
 
     HSwap(std::string);
 
@@ -30,6 +34,9 @@ struct HSwap{
     // Assumes detuning chirp frequency is nonzero
     double cumulative_phase(double) const;
 
+    // Refresh cache values for a new time
+    void refresh_cache(double);
+
     // Transforms the coefficients solved for in the rotating wave
     // approximation back to the actual density matrix values;
     // i.e. put the oscillation back in.
@@ -38,7 +45,7 @@ struct HSwap{
 
     // Derivative operator to be passed to the timestepper
     virtual std::vector<std::complex<double>> operator()(double,
-        const std::vector<std::complex<double>>&) const = 0;
+        const std::vector<std::complex<double>>&) = 0;
 };
 
 #endif

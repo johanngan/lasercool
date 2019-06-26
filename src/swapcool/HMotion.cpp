@@ -20,14 +20,18 @@ HMotion::HMotion(std::string fname):HSwap(fname), SPEED_OF_LIGHT(299792458),
 
 std::complex<double> HMotion::haction(double gt,
     const std::vector<std::complex<double>>& rho_c,
-    unsigned nl, int kl, unsigned nr, int kr) const {
+    unsigned nl, int kl, unsigned nr, int kr) {
+    // Update/read cache
+    refresh_cache(gt);
+    double cachehalfdetun = cache[halfdetun], cachehalfrabi = cache[halfrabi];
+
     std::complex<double> val = 0;
 
     // Diagonal contribution
     double diag_coeff = recoil_freq_per_decay*sqr(kl);
     switch(nl) {
-        case 1: diag_coeff += 0.5*detun_per_decay(gt); break;
-        case 2: diag_coeff -= 0.5*detun_per_decay(gt); break;
+        case 1: diag_coeff += cachehalfdetun; break;
+        case 2: diag_coeff -= cachehalfdetun; break;
     }
     val += diag_coeff*handler.ele(rho_c, nl, kl, nr, kr);
 
@@ -35,12 +39,11 @@ std::complex<double> HMotion::haction(double gt,
     if(nl > 0) {
         // in rho_c, flip nl: 1 -> 2, 2 -> 1
         unsigned nlflip = !(nl - 1) + 1;
-        double rabi = rabi_softswitch(gt);
         if(kl - 1 >= handler.kmin) {
-            val += 0.5*rabi*handler.ele(rho_c, nlflip, kl-1, nr, kr);
+            val += cachehalfrabi*handler.ele(rho_c, nlflip, kl-1, nr, kr);
         }
         if(kl + 1 <= handler.kmax) {
-            val += 0.5*rabi*handler.ele(rho_c, nlflip, kl+1, nr, kr);
+            val += cachehalfrabi*handler.ele(rho_c, nlflip, kl+1, nr, kr);
         }
     }
 
@@ -99,7 +102,7 @@ std::vector<std::complex<double>> HMotion::density_matrix(
 }
 
 std::vector<std::complex<double>> HMotion::operator()(double gt,
-    const std::vector<std::complex<double>>& rho_c) const {
+    const std::vector<std::complex<double>>& rho_c) {
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     std::vector<std::complex<double>> drho_c(rho_c.size());
     for(const auto& sub: handler.idxlist) {

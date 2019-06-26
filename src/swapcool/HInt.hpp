@@ -21,7 +21,7 @@ struct HInt : public HSwap {
 
     // Derivative operator to be passed to the timestepper
     std::vector<std::complex<double>> operator()(double,
-        const std::vector<std::complex<double>>&) const override;
+        const std::vector<std::complex<double>>&) override;
 };
 
 #endif
