@@ -44,11 +44,12 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     }
 }
 
-unsigned DensMatHandler::stateidx(unsigned n, int k) const {
+inline unsigned DensMatHandler::stateidx(unsigned n, int k) const {
     // Shift up so the lowest value has index 0
     return (k - kmin) + kstates*n;
 }
-unsigned DensMatHandler::subidx(unsigned nl, int kl, unsigned nr, int kr) const {
+inline unsigned DensMatHandler::subidx(
+    unsigned nl, int kl, unsigned nr, int kr) const {
     return stateidx(nr, kr) + nstates*stateidx(nl, kl);
 }
 
