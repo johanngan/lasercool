@@ -35,13 +35,12 @@ std::complex<double> HMotion::haction(double gt,
     if(nl > 0) {
         // in rho_c, flip nl: 1 -> 2, 2 -> 1
         unsigned nlflip = !(nl - 1) + 1;
+        double rabi = rabi_softswitch(gt);
         if(kl - 1 >= handler.kmin) {
-            val += 0.5*rabi_softswitch(gt)
-                * handler.ele(rho_c, nlflip, kl-1, nr, kr);
+            val += 0.5*rabi*handler.ele(rho_c, nlflip, kl-1, nr, kr);
         }
         if(kl + 1 <= handler.kmax) {
-            val += 0.5*rabi_softswitch(gt)
-                * handler.ele(rho_c, nlflip, kl+1, nr, kr);
+            val += 0.5*rabi*handler.ele(rho_c, nlflip, kl+1, nr, kr);
         }
     }
 
