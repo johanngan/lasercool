@@ -12,7 +12,7 @@ const std::string KDIST_FINAL_OUTFILEBASE = "kdist_final.out";
 // Approximate number of solution points to output per sawtooth cycle.
 // Only approximate because adaptive time steps make it hard to divide things
 // exactly
-const double APPROX_OUTPUT_PTS_PER_CYCLE = 1e3;
+const double APPROX_OUTPUT_PTS_PER_CYCLE = 100;
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
