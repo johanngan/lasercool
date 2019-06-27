@@ -18,12 +18,14 @@ struct HMotion : public HSwap {
 
     // The action of the Hamiltonian on the density matrix, returns a single
     // component of H*rho
+    // Optionally provide a precomputed stored index for speed
+    // -1 means no index is provided
     std::complex<double> haction(const std::vector<std::complex<double>>&,
-        unsigned, int, unsigned, int) const;
+        unsigned, int, unsigned, int, int idx=-1) const;
     
     // The spontaneous decay part of the derivative (Lindblad superoperator)
     std::complex<double> decayterm(const std::vector<std::complex<double>>&,
-        unsigned, int, unsigned, int) const;
+        unsigned, int, unsigned, int, unsigned) const;
 
     // Transforms the coefficients solved for in the rotating wave
     // approximation back to the actual density matrix values;

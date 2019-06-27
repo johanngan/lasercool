@@ -20,7 +20,7 @@ HMotion::HMotion(std::string fname):HSwap(fname), SPEED_OF_LIGHT(299792458),
 
 std::complex<double> HMotion::haction(
     const std::vector<std::complex<double>>& rho_c,
-    unsigned nl, int kl, unsigned nr, int kr) const {
+    unsigned nl, int kl, unsigned nr, int kr, int idx) const {
     // Read from cache
     double cachehalfdetun = cache[halfdetun], cachehalfrabi = cache[halfrabi];
 
@@ -32,7 +32,12 @@ std::complex<double> HMotion::haction(
         case 1: diag_coeff += cachehalfdetun; break;
         case 2: diag_coeff -= cachehalfdetun; break;
     }
-    val += diag_coeff*handler.ele(rho_c, nl, kl, nr, kr);
+    if(idx != -1) {
+        // Use precomputed index
+        val += diag_coeff*handler.atidx(rho_c, idx);
+    } else {
+        val += diag_coeff*handler.ele(rho_c, nl, kl, nr, kr);
+    }
 
     // Off-diagonal contributions
     if(nl > 0) {
@@ -51,7 +56,7 @@ std::complex<double> HMotion::haction(
 
 std::complex<double> HMotion::decayterm(
     const std::vector<std::complex<double>>& rho_c,
-    unsigned nl, int kl, unsigned nr, int kr) const {
+    unsigned nl, int kl, unsigned nr, int kr, unsigned idx) const {
     // On the block diagonal
     if(nl == nr) {
         switch(nl) {
@@ -74,11 +79,13 @@ std::complex<double> HMotion::decayterm(
                 return branching_ratio * diprad;
             }
             case 2: // Double decay of coherences within excited state
-                return -handler.ele(rho_c, 2, kl, 2, kr);
+                // idx is guaranteed to be stored by design
+                return -handler.atidx(rho_c, idx);
         }
     } else if(nl == 2 || nr == 2) {
         // Exponential decay of coherences between excited state and lower state
-        return -0.5*handler.ele(rho_c, nl, kl, nr, kr);
+        // idx is guaranteed to be stored by design
+        return -0.5*handler.atidx(rho_c, idx);
     }
     return 0;
 }
@@ -107,12 +114,14 @@ std::vector<std::complex<double>> HMotion::operator()(double gt,
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     std::vector<std::complex<double>> drho_c(rho_c.size());
     for(const auto& sub: handler.idxlist) {
-        unsigned nl = std::get<0>(sub), nr = std::get<2>(sub);
-        int kl = std::get<1>(sub), kr = std::get<3>(sub);
-        handler.at(drho_c, nl, kl, nr, kr) =
-            -1i*haction(rho_c, nl, kl, nr, kr)
-            +1i*std::conj(haction(rho_c, nr, kr, nl, kl))
-            + decayterm(rho_c, nl, kl, nr, kr) * enable_decay;
+        unsigned nl, nr;
+        int kl, kr;
+        unsigned idx;
+        std::tie(nl, kl, nr, kr, idx) = sub;
+        handler.atidx(drho_c, idx) =
+            -1i*(haction(rho_c, nl, kl, nr, kr, idx)
+                 - std::conj(haction(rho_c, nr, kr, nl, kl)))
+            + decayterm(rho_c, nl, kl, nr, kr, idx) * enable_decay;
     }
     return drho_c;
 }

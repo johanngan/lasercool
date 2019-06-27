@@ -17,8 +17,14 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     if(kmin > kmax) {
         throw std::runtime_error("Min momentum greater than max momentum.");
     }
-    // Calculate state numbers
+    // Calculate state numbers/increments
     kstates = kmax - kmin + 1;
+    krinc = 1;
+    nrinc = kstates*krinc;
+    klinc = nint*nrinc;
+    nlinc = kstates*klinc;
+    ninc = nlinc + nrinc;
+    kinc = klinc + krinc;
     
     // Set up index maps
     // Store only the upper triangle, and also exclude the coherences with
@@ -30,7 +36,7 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
         for(int kl = kmin; kl <= kmax; ++kl) {
             for(int kr = kl; kr <= kmax; ++kr) {
                 idxmap[subidx(n, kl, n, kr)] = idxmap.size();
-                idxlist.push_back({n, kl, n, kr});
+                idxlist.push_back({n, kl, n, kr, subidx(n, kl, n, kr)});
             }
         }
     }
@@ -38,7 +44,7 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     for(int kl = kmin; kl <= kmax; ++kl) {
         for(int kr = kmin; kr <= kmax; ++kr) {
             idxmap[subidx(1, kl, 2, kr)] = idxmap.size();
-            idxlist.push_back({1, kl, 2, kr});
+            idxlist.push_back({1, kl, 2, kr, subidx(1, kl, 2, kr)});
         }
     }
 }
@@ -49,18 +55,30 @@ inline unsigned DensMatHandler::subidx(
 }
 
 bool DensMatHandler::has(unsigned nl, int kl, unsigned nr, int kr) const {
-    return (idxmap.find(subidx(nl, kl, nr, kr)) != idxmap.end());
+    return hasidx(subidx(nl, kl, nr, kr));
+}
+bool DensMatHandler::hasidx(unsigned idx) const {
+    return (idxmap.find(idx) != idxmap.end());
 }
 
 std::complex<double> DensMatHandler::ele(
     const std::vector<std::complex<double>>& rho,
     unsigned nl, int kl, unsigned nr, int kr) const {
+    return eleidx(rho, nl, kl, nr, kr, subidx(nl, kl, nr, kr));
+}
+std::complex<double> DensMatHandler::eleidx(
+    const std::vector<std::complex<double>>& rho,
+    unsigned nl, int kl, unsigned nr, int kr, unsigned idx) const {
     // Directly stored
-    if(has(nl, kl, nr, kr)) {
-        return rho[idxmap.at(subidx(nl, kl, nr, kr))];
-    } else if(has(nr, kr, nl, kl)) { // Try the transpose
-        // Density matrix must be Hermitian
-        return std::conj(rho[idxmap.at(subidx(nr, kr, nl, kl))]);
+    if(hasidx(idx)) {
+        return atidx(rho, idx);
+    } else {
+        // Try the transpose
+        unsigned idxtrans = idxtranspose(nl, kl, nr, kr, idx);
+        if(hasidx(idxtrans)) {
+            // Density matrix must be Hermitian
+            return std::conj(atidx(rho, idxtrans));
+        }
     }
     // If nothing is found, must be a 0 entry (coherence with ground state)
     return 0;
@@ -68,12 +86,30 @@ std::complex<double> DensMatHandler::ele(
 std::complex<double>& DensMatHandler::at(
     std::vector<std::complex<double>>& rho,
     unsigned nl, int kl, unsigned nr, int kr) const {
-    return rho[idxmap.at(subidx(nl, kl, nr, kr))];
+    return atidx(rho, subidx(nl, kl, nr, kr));
 }
 const std::complex<double>& DensMatHandler::at(
     const std::vector<std::complex<double>>& rho,
     unsigned nl, int kl, unsigned nr, int kr) const {
-    return rho[idxmap.at(subidx(nl, kl, nr, kr))];
+    return atidx(rho, subidx(nl, kl, nr, kr));
+}
+std::complex<double>& DensMatHandler::atidx(
+    std::vector<std::complex<double>>& rho, unsigned idx) const {
+    return rho[idxmap.at(idx)];
+}
+const std::complex<double>& DensMatHandler::atidx(
+    const std::vector<std::complex<double>>& rho, unsigned idx) const {
+    return rho[idxmap.at(idx)];
+}
+
+unsigned DensMatHandler::swapsub(int sub1, int sub2, int inc1, int inc2,
+    unsigned idx) const {
+    return idx + (inc1 - inc2)*(sub2 - sub1);
+}
+unsigned DensMatHandler::idxtranspose(unsigned nl, int kl, unsigned nr, int kr,
+    unsigned idx) const {
+    return swapsub(kl, kr, klinc, krinc,
+        swapsub(nl, nr, nlinc, nrinc, idx));
 }
 
 std::complex<double> DensMatHandler::totaltr(
