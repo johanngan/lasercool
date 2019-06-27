@@ -19,7 +19,6 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     }
     // Calculate state numbers
     kstates = kmax - kmin + 1;
-    nstates = kstates * nint;
     
     // Set up index maps
     // Store only the upper triangle, and also exclude the coherences with
@@ -44,13 +43,9 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     }
 }
 
-inline unsigned DensMatHandler::stateidx(unsigned n, int k) const {
-    // Shift up so the lowest value has index 0
-    return (k - kmin) + kstates*n;
-}
 inline unsigned DensMatHandler::subidx(
     unsigned nl, int kl, unsigned nr, int kr) const {
-    return stateidx(nr, kr) + nstates*stateidx(nl, kl);
+    return kr-kmin + kstates*(nr + nint*(kl-kmin + kstates*nl));
 }
 
 bool DensMatHandler::has(unsigned nl, int kl, unsigned nr, int kr) const {
