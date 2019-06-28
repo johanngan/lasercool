@@ -49,7 +49,7 @@ DensMatHandler::DensMatHandler(std::string fname):nint(3) {
     }
 }
 
-inline unsigned DensMatHandler::subidx(
+unsigned DensMatHandler::subidx(
     unsigned nl, int kl, unsigned nr, int kr) const {
     return kr-kmin + kstates*(nr + nint*(kl-kmin + kstates*nl));
 }
