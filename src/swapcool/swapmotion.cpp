@@ -34,35 +34,73 @@ int main(int argc, char** argv) {
         }
     }
 
-    double decay_rate, duration_by_decay, tol, init_k_double;
+    double decay_rate, duration_by_decay, tol, init_temp, init_k_double;
     load_params(cfg_file,
         {
             {"spontaneous_decay_rate", &decay_rate},
             {"duration", &duration_by_decay},
             {"tolerance", &tol},
+            {"initial_temperature", &init_temp},
             {"initial_momentum", &init_k_double}
         }
     );
-    int init_k = static_cast<int>(init_k_double);
+    bool is_thermal = true;
+    int init_k;
+    if(!std::isnan(init_k_double)) {
+        // Override temperature and start from a fixed k
+        is_thermal = false;
+        init_k = static_cast<double>(init_k_double);
+    }
 
     // Form the derivative operator, in natural units
     // d(rho)/d(Gamma*t)
     HMotion hamil(cfg_file);
+
+    // Initialize state
+    std::vector<std::complex<double>> rho_c(hamil.handler.idxmap.size());
+    if(is_thermal) {
+        // Initialize to thermal distribution
+        double partition_fn = 0;
+        for(int k = hamil.handler.kmin; k <= hamil.handler.kmax; ++k) {
+            double boltz_weight = std::exp(
+                -hamil.HBAR*hamil.recoil_freq_per_decay*decay_rate*k*k
+                / (hamil.K_BOLTZMANN*init_temp));
+            partition_fn += boltz_weight;
+            hamil.handler.at(rho_c, 1, k, 1, k) = boltz_weight;
+        }
+        // Normalize by partition function
+        for(int k = hamil.handler.kmin; k <= hamil.handler.kmax; ++k) {
+            hamil.handler.at(rho_c, 1, k, 1, k) /= partition_fn;
+        }
+    } else {
+        // Initialize all in one k-state
+        hamil.handler.at(rho_c, 1, init_k, 1, init_k) = 1;
+    }
 
     // Print out stuff if not in batch mode
     if(!batchmode) {
         // Parameters
         std::cout << "In units of decay rate when applicable:" << std::endl
             << "    Decay rate: " << decay_rate << std::endl
-            << "    Decay: " << (hamil.enable_decay ? "on" : "off") << std::endl
+            << "    Decay: " << (hamil.enable_decay ? "on" : "off")
+            << std::endl
             << "    Branching ratio: " << hamil.branching_ratio << std::endl
-            << "    Delta amplitude: " << hamil.detun_amp_per_decay << std::endl
-            << "    Sawtooth frequency: " << hamil.detun_freq_per_decay << std::endl
+            << "    Delta amplitude: " << hamil.detun_amp_per_decay
+            << std::endl
+            << "    Sawtooth frequency: " << hamil.detun_freq_per_decay
+            << std::endl
             << "    Rabi frequency: " << hamil.rabi_freq_per_decay << std::endl
-            << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
-            << "    Initial momentum state: " << init_k << std::endl
-            << "    Momentum state range: ["
-                << hamil.handler.kmin << ", " << hamil.handler.kmax
+            << "    Recoil frequency: " << hamil.recoil_freq_per_decay
+            << std::endl;
+        
+        if(is_thermal) {
+            std::cout << "    Initial temperature: " << init_temp << " K"
+                << std::endl;
+        } else {
+            std::cout << "    Initial momentum state: " << init_k << std::endl;
+        }
+        std::cout << "    Momentum state range: ["
+            << hamil.handler.kmin << ", " << hamil.handler.kmax
             << "]" << std::endl
             << "    Duration: " << duration_by_decay << " ("
             << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
@@ -71,7 +109,8 @@ int main(int argc, char** argv) {
             << std::endl;
     
         // Quality metrics
-        double dopshift = hamil.recoil_freq_per_decay*init_k;
+        double dopshift = hamil.recoil_freq_per_decay
+            * calc_krms(rho_c, hamil.handler);
         double rampsize = hamil.detun_amp_per_decay / (4*dopshift);
         double qfactor = 0.5*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay
             / (dopshift - hamil.recoil_freq_per_decay + hamil.rabi_freq_per_decay);
@@ -80,7 +119,8 @@ int main(int argc, char** argv) {
         double splitting = 2*(dopshift - hamil.recoil_freq_per_decay)
             / hamil.rabi_freq_per_decay;
         
-        std::cout << "Quality metrics (* mildly low, ** very low):" << std::endl
+        std::cout << "Quality metrics (* mildly low, ** very low):"
+            << std::endl
             << "    " << evaluate_quality_metric(rampsize)
             << "Ramp size: " << rampsize << std::endl
             << "    " << evaluate_quality_metric(qfactor)
@@ -92,10 +132,6 @@ int main(int argc, char** argv) {
             << std::endl;
     }
 
-    // Approximate gamma*dt between output points
-    double output_gdt = 1. /
-        (APPROX_OUTPUT_PTS_PER_CYCLE * hamil.detun_freq_per_decay);
-
     // Form output files
     std::ostringstream oftag_ss;
     oftag_ss << std::setprecision(OUTFILENAME_PRECISION)
@@ -104,8 +140,12 @@ int main(int argc, char** argv) {
         << "_Omega" << hamil.rabi_freq_per_decay
         << "_recoil" << hamil.recoil_freq_per_decay
         << "_" << (hamil.enable_decay ? "" : "no") << "decay"
-        << "_B" << hamil.branching_ratio
-        << "_k" << init_k;
+        << "_B" << hamil.branching_ratio;
+    if(is_thermal) {
+        oftag_ss << "_T" << init_temp;
+    } else {
+        oftag_ss << "_k" << init_k;
+    }
 
     std::ofstream rho_out(fullfile(tag_filename(
         RHO_OUTFILEBASE, oftag_ss.str()),
@@ -144,9 +184,9 @@ int main(int argc, char** argv) {
     int nfullcycles = static_cast<int>(nfullcycles_double);
     bool has_partial_cycle = (cycle_remain != 0);
 
-    std::vector<std::complex<double>> rho_c(hamil.handler.idxmap.size());
-    // Initialize all in one k-state
-    hamil.handler.at(rho_c, 1, init_k, 1, init_k) = 1;
+    // Approximate gamma*dt between output points
+    double output_gdt = 1. /
+        (APPROX_OUTPUT_PTS_PER_CYCLE * hamil.detun_freq_per_decay);
     // For holding the time of the popped final entry of the solution,
     // to be used after loop termination
     double solution_endgt = 0;
@@ -241,6 +281,15 @@ std::string evaluate_quality_metric(
     return okay_str;
 }
 
+double calc_krms(const std::vector<std::complex<double>>& rho,
+    const DensMatHandler& handler) {
+    double krms = 0;
+    for(int k = handler.kmin; k <= handler.kmax; ++k) {
+        krms += std::real(handler.partialtr_n(rho, k))*k*k;
+    }
+    return sqrt(krms);
+}
+
 void initialize_cycle(std::vector<std::complex<double>>& rho,
     const HMotion& hamil) {
     for(int kl = hamil.handler.kmin; kl <= hamil.handler.kmax; ++kl) {
@@ -291,12 +340,8 @@ void write_state_info(std::ofstream& outfile, double t,
         outfile << " " << std::real(handler.partialtr_k(rho, n));
     }
     outfile << " " << std::real(handler.totaltr(rho))
-        << " " << std::real(handler.purity(rho));
-    double krms = 0;    // RMS k value
-    for(int k = handler.kmin; k <= handler.kmax; ++k) {
-        krms += std::real(handler.partialtr_n(rho, k))*k*k;
-    }
-    outfile << " " << sqrt(krms);
+        << " " << std::real(handler.purity(rho))
+        << " " << calc_krms(rho, handler);
     outfile << std::endl;
 }
 void write_kdist(std::ofstream& outfile, double t,
