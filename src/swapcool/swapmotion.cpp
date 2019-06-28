@@ -20,6 +20,19 @@ int main(int argc, char** argv) {
     if(argc > 1) {
         cfg_file = std::string(argv[1]);
     }
+    // In "batch mode", don't output any info to the console
+    bool batchmode = false;
+    if(argc > 2) {
+        std::string mode(argv[2]);
+        if(mode == "-b" || mode == "--batch-mode") {
+            batchmode = true;
+        } else {
+            std::cout << "Invalid argument: "
+                "\"-b\" or \"--batch-mode\" for batch mode, "
+                "otherwise omit second argument." << std::endl;
+            return 1;
+        }
+    }
 
     double decay_rate, duration_by_decay, tol, init_k_double;
     load_params(cfg_file,
@@ -36,45 +49,48 @@ int main(int argc, char** argv) {
     // d(rho)/d(Gamma*t)
     HMotion hamil(cfg_file);
 
-    // Print out parameters
-    std::cout << "In units of decay rate when applicable:" << std::endl
-        << "    Decay rate: " << decay_rate << std::endl
-        << "    Decay: " << (hamil.enable_decay ? "on" : "off") << std::endl
-        << "    Branching ratio: " << hamil.branching_ratio << std::endl
-        << "    Delta amplitude: " << hamil.detun_amp_per_decay << std::endl
-        << "    Sawtooth frequency: " << hamil.detun_freq_per_decay << std::endl
-        << "    Rabi frequency: " << hamil.rabi_freq_per_decay << std::endl
-        << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
-        << "    Initial momentum state: " << init_k << std::endl
-        << "    Momentum state range: ["
-            << hamil.handler.kmin << ", " << hamil.handler.kmax
-        << "]" << std::endl
-        << "    Duration: " << duration_by_decay << " ("
-        << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
-        << std::endl
-        << "    Stepper tolerance: " << tol << std::endl
-        << std::endl;
+    // Print out stuff if not in batch mode
+    if(!batchmode) {
+        // Parameters
+        std::cout << "In units of decay rate when applicable:" << std::endl
+            << "    Decay rate: " << decay_rate << std::endl
+            << "    Decay: " << (hamil.enable_decay ? "on" : "off") << std::endl
+            << "    Branching ratio: " << hamil.branching_ratio << std::endl
+            << "    Delta amplitude: " << hamil.detun_amp_per_decay << std::endl
+            << "    Sawtooth frequency: " << hamil.detun_freq_per_decay << std::endl
+            << "    Rabi frequency: " << hamil.rabi_freq_per_decay << std::endl
+            << "    Recoil frequency: " << hamil.recoil_freq_per_decay << std::endl
+            << "    Initial momentum state: " << init_k << std::endl
+            << "    Momentum state range: ["
+                << hamil.handler.kmin << ", " << hamil.handler.kmax
+            << "]" << std::endl
+            << "    Duration: " << duration_by_decay << " ("
+            << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
+            << std::endl
+            << "    Stepper tolerance: " << tol << std::endl
+            << std::endl;
     
-    // Calculate quality metrics
-    double dopshift = hamil.recoil_freq_per_decay*init_k;
-    double rampsize = hamil.detun_amp_per_decay / (4*dopshift);
-    double qfactor = 0.5*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay
-        / (dopshift - hamil.recoil_freq_per_decay + hamil.rabi_freq_per_decay);
-    double adiabaticity = hamil.rabi_freq_per_decay*hamil.rabi_freq_per_decay
-        / (2*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay);
-    double splitting = 2*(dopshift - hamil.recoil_freq_per_decay)
-        / hamil.rabi_freq_per_decay;
-    
-    std::cout << "Quality metrics (* mildly low, ** very low):" << std::endl
-        << "    " << evaluate_quality_metric(rampsize)
-        << "Ramp size: " << rampsize << std::endl
-        << "    " << evaluate_quality_metric(qfactor)
-        << "Q factor: " << qfactor << std::endl
-        << "    " << evaluate_quality_metric(adiabaticity)
-        << "Adiabaticity: " << adiabaticity << std::endl
-        << "    " << evaluate_quality_metric(splitting)
-        << "Doppler splitting: " << splitting << std::endl
-        << std::endl;
+        // Quality metrics
+        double dopshift = hamil.recoil_freq_per_decay*init_k;
+        double rampsize = hamil.detun_amp_per_decay / (4*dopshift);
+        double qfactor = 0.5*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay
+            / (dopshift - hamil.recoil_freq_per_decay + hamil.rabi_freq_per_decay);
+        double adiabaticity = hamil.rabi_freq_per_decay*hamil.rabi_freq_per_decay
+            / (2*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay);
+        double splitting = 2*(dopshift - hamil.recoil_freq_per_decay)
+            / hamil.rabi_freq_per_decay;
+        
+        std::cout << "Quality metrics (* mildly low, ** very low):" << std::endl
+            << "    " << evaluate_quality_metric(rampsize)
+            << "Ramp size: " << rampsize << std::endl
+            << "    " << evaluate_quality_metric(qfactor)
+            << "Q factor: " << qfactor << std::endl
+            << "    " << evaluate_quality_metric(adiabaticity)
+            << "Adiabaticity: " << adiabaticity << std::endl
+            << "    " << evaluate_quality_metric(splitting)
+            << "Doppler splitting: " << splitting << std::endl
+            << std::endl;
+    }
 
     // Approximate gamma*dt between output points
     double output_gdt = 1. /
@@ -142,8 +158,10 @@ int main(int argc, char** argv) {
     ///
 
     for(int cycle = 0; cycle < nfullcycles + has_partial_cycle; ++cycle) {
-        std::cout << "\rProgress: running cycle " << cycle + 1
-            << "/" << nfullcycles + has_partial_cycle << std::flush;
+        if(!batchmode) {
+            std::cout << "\rProgress: running cycle " << cycle + 1
+                << "/" << nfullcycles + has_partial_cycle << std::flush;
+        }
 
         // Determine the final local cycle time to solve until
         double endtime = std::min(
@@ -184,14 +202,16 @@ int main(int argc, char** argv) {
             }
         }
     }
-    std::cout << std::endl;
+    if(!batchmode) {
+        std::cout << std::endl;
 
-    ///
-    std::chrono::duration<double> total_seconds =
-        std::chrono::system_clock::now() - start;
-    std::cout << "Simulation time: " << total_seconds.count() << " s"
-        << std::endl;
-    ///
+        ///
+        std::chrono::duration<double> total_seconds =
+            std::chrono::system_clock::now() - start;
+            std::cout << "Simulation time: " << total_seconds.count() << " s"
+            << std::endl;
+        ///
+    }
 
     // Write the final state to file
     double solution_endtime = solution_endgt / decay_rate;
