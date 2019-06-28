@@ -50,18 +50,18 @@ PhysicalParams::PhysicalParams(std::string species, std::string fname):
         / (M_PI*sqr(VACUUM_PERMITTIVITY*mass));
 
     // Defaults and conversion to SI //
-    if(isnan(final_detuning_per_decay_rate)) {
+    if(std::isnan(final_detuning_per_decay_rate)) {
         final_detuning_per_decay_rate = -0.5;   // Gives Doppler temperature
     }
     final_detuning = final_detuning_per_decay_rate * decay_rate;
-    if(isnan(initial_detuning_per_decay_rate)) {
+    if(std::isnan(initial_detuning_per_decay_rate)) {
         // Gives highest cooling rate at high temperatures
         initial_detuning_per_decay_rate = optimal_detuning(initial_temp, mass,
             calc_laser_wavenumber(resonant_wavenumber, final_detuning))
             / decay_rate;
     }
     initial_detuning = initial_detuning_per_decay_rate * decay_rate;
-    if(isnan(detuning_ramp_rate_natl_units)) {
+    if(std::isnan(detuning_ramp_rate_natl_units)) {
         // Ramp the entire time
         detuning_ramp_rate_natl_units =
             (final_detuning_per_decay_rate - initial_detuning_per_decay_rate)
