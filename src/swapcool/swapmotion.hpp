@@ -14,6 +14,14 @@
 #include "lasercool/iotag.hpp"
 #include "lasercool/timestepping.hpp"
 
+// Generate a thermal state
+std::vector<std::complex<double>> thermal_state(double, const HMotion&);
+// Print out information about the system
+void print_system_info(const std::vector<std::complex<double>>&,
+    const HMotion&, double, double, bool, double, double);
+// Calculate the RMS k value of a state
+double calc_krms(const std::vector<std::complex<double>>&,
+    const DensMatHandler&);
 // Quality metric evaluation string
 std::string evaluate_quality_metric(
     double,
@@ -22,9 +30,6 @@ std::string evaluate_quality_metric(
     std::string okay_str="",
     std::string low_str="*",
     std::string very_low_str="**");
-// Calculate the RMS k value of a state
-double calc_krms(const std::vector<std::complex<double>>&,
-    const DensMatHandler&);
 // Modify the density matrix in preparation for a new cycle
 void initialize_cycle(std::vector<std::complex<double>>&, const HMotion&);
 // Write state info to a file given the density matrix at a fixed time

@@ -15,10 +15,9 @@ int main(int argc, char** argv) {
         cfg_file = std::string(argv[1]);
     }
 
-    double decay_rate, duration_by_decay, tol;
+    double duration_by_decay, tol;
     load_params(cfg_file,
         {
-            {"spontaneous_decay_rate", &decay_rate},
             {"duration", &duration_by_decay},
             {"tolerance", &tol}
         }
@@ -70,7 +69,8 @@ int main(int argc, char** argv) {
     for(auto point: rho_c_solution) {
         // Convert rho_c (rotating wave coefficients) to rho
         auto rho = hamil.density_matrix(point.first, point.second);
-        rho_out << point.first / decay_rate // Convert from Gamma*t to just t
+        // Convert from Gamma*t to just t
+        rho_out << point.first / hamil.decay_rate
             << " " << std::real(rho[hamil.subidx(0,0)])
             << " " << std::real(rho[hamil.subidx(1,1)])
             << " " << std::real(rho[hamil.subidx(2,2)])

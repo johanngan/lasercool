@@ -2,7 +2,7 @@
 
 HSwap::HSwap(std::string fname):HBAR(1.054571800e-34),
     cache({0, 0.5*detun_per_decay(0), 0.5*rabi_softswitch(0)}) {
-    double decay_rate, low_energy, high_energy;
+    double low_energy, high_energy;
     load_params(fname,
         {
             {"spontaneous_decay_rate", &decay_rate},

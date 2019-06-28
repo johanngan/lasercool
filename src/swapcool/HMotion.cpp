@@ -7,10 +7,9 @@ inline T sqr(T x) {return x*x;}
 HMotion::HMotion(std::string fname):HSwap(fname),
     SPEED_OF_LIGHT(299792458), K_BOLTZMANN(1.380649e-23),
     stationary_decay_prob(0.6) {
-    double decay_rate, mass, init_temp, ksigmas, kmin_double, kmax_double;
+    double mass, init_temp, ksigmas, kmin_double, kmax_double;
     load_params(fname,
         {
-            {"spontaneous_decay_rate", &decay_rate},
             {"mass", &mass},
             {"initial_temperature", &init_temp},
             {"momentum_stddevs", &ksigmas},
