@@ -1,23 +1,19 @@
 #ifndef DENSMATHANDLER_HPP_
 #define DENSMATHANDLER_HPP_
 
-#include <string>
 #include <complex>
 #include <vector>
 #include <unordered_map>
 #include <utility>
 #include <tuple>
 #include <exception>
-#include "lasercool/readcfg.hpp"
 
 // Handler for dealing with an efficiently stored density matrix for the
 // 3-state SWAP system that takes advantage of hermiticity and incoherence
 // between the "sink" state and the other states.
 struct DensMatHandler {
-    
-    
     unsigned nint;  // number of internal states
-    int kmax, kmin;   // range of tracked k values
+    int kmin, kmax;   // range of tracked k values
     unsigned kstates;   // number of k states
     // linear index increments for transversing (nl, kl, nr, kr), and
     // jointly (nl & nr), (kl & kr)
@@ -31,7 +27,7 @@ struct DensMatHandler {
     // precomputed for speed
     std::vector<std::tuple<unsigned, int, unsigned, int, unsigned>> idxlist;
 
-    DensMatHandler(std::string);
+    DensMatHandler(int kmin=0, int kmax=0);
 
     // Convert state subscripts to linear indexes in the density matrix,
     // enumerated as |n-left, k-left><n-right, k-right|

@@ -5,14 +5,22 @@ template<typename T>
 inline T sqr(T x) {return x*x;}
 
 HMotion::HMotion(std::string fname):HSwap(fname), SPEED_OF_LIGHT(299792458),
-    stationary_decay_prob(0.6), handler(fname) {
-    double decay_rate, mass;
+    stationary_decay_prob(0.6) {
+    double decay_rate, mass, kmin_double, kmax_double;
     load_params(fname,
         {
             {"spontaneous_decay_rate", &decay_rate},
-            {"mass", &mass}
+            {"mass", &mass},
+            {"min_momentum", &kmin_double},
+            {"max_momentum", &kmax_double}
         }
     );
+    if(std::isnan(kmin_double)) {
+        kmin_double = -kmax_double;
+    }
+    int kmin = static_cast<int>(kmin_double);
+    int kmax = static_cast<int>(kmax_double);
+    handler = DensMatHandler(kmin, kmax);
 
     double k_photon_per_decay = transition_angfreq_per_decay/SPEED_OF_LIGHT;
     recoil_freq_per_decay = HBAR*sqr(k_photon_per_decay)*decay_rate/(2*mass);

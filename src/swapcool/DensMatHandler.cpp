@@ -1,21 +1,9 @@
 #include "DensMatHandler.hpp"
 
-DensMatHandler::DensMatHandler(std::string fname):nint(3) {
-    double kmax_double, kmin_double;
-    load_params(fname,
-        {
-            {"max_momentum", &kmax_double},
-            {"min_momentum", &kmin_double}
-        }
-    );
-    // Default value
-    if(std::isnan(kmin_double)) {
-        kmin_double = -kmax_double;
-    }
-    kmax = static_cast<int>(kmax_double);
-    kmin = static_cast<int>(kmin_double);
+DensMatHandler::DensMatHandler(int kmin, int kmax):
+    nint(3), kmin(kmin), kmax(kmax) {
     if(kmin > kmax) {
-        throw std::runtime_error("Min momentum greater than max momentum.");
+        throw std::invalid_argument("Min momentum greater than max momentum.");
     }
     // Calculate state numbers/increments
     kstates = kmax - kmin + 1;
