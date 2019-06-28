@@ -6,7 +6,6 @@
 const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
 const std::string OUTPUT_DIR = "output/swapcool/swapmotion";
 const std::string RHO_OUTFILEBASE = "rho.out";
-const std::string CYCLE_OUTFILEBASE = "cycles.out";
 const std::string KDIST_OUTFILEBASE = "kdist.out";
 const std::string KDIST_FINAL_OUTFILEBASE = "kdist_final.out";
 // Approximate number of solution points to output per sawtooth cycle.
@@ -91,16 +90,6 @@ int main(int argc, char** argv) {
         << "_" << (hamil.enable_decay ? "" : "no") << "decay"
         << "_B" << hamil.branching_ratio
         << "_k" << init_k;
-    std::ofstream cyclesout(fullfile(tag_filename(
-        CYCLE_OUTFILEBASE, oftag_ss.str()),
-        OUTPUT_DIR
-    ));
-    for(double gt = 0; gt < duration_by_decay; gt += output_gdt) {
-        cyclesout << gt << " " << hamil.rabi_softswitch(gt) << " "
-        << hamil.detun_per_decay(gt) << " " << hamil.cumulative_phase(gt)
-        << std::endl;
-    }
-    cyclesout.close();
 
     std::ofstream rho_out(fullfile(tag_filename(
         RHO_OUTFILEBASE, oftag_ss.str()),
@@ -284,20 +273,8 @@ void write_state_info(std::ofstream& outfile, double t,
     outfile << " " << std::real(handler.totaltr(rho))
         << " " << std::real(handler.purity(rho));
     double krms = 0;    // RMS k value
-    for(int k = (handler.kmax*handler.kmin <= 0 ?
-            0 : std::min(std::abs(handler.kmax), std::abs(handler.kmin)));
-        k <= std::max(std::abs(handler.kmax), std::abs(handler.kmin));
-        ++k) {
-        std::complex<double> ktr;
-        if(k >= handler.kmin && k <= handler.kmax) {
-            ktr += handler.partialtr_n(rho, k);
-        }
-        if(k != 0 && -k >= handler.kmin && -k <= handler.kmax) {
-            // The other sign
-            ktr += handler.partialtr_n(rho, -k);
-        }
-        outfile << " " << std::real(ktr);
-        krms += std::real(ktr) * k*k;
+    for(int k = handler.kmin; k <= handler.kmax; ++k) {
+        krms += std::real(handler.partialtr_n(rho, k))*k*k;
     }
     outfile << " " << sqrt(krms);
     outfile << std::endl;
