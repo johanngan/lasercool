@@ -37,6 +37,7 @@ int main(int argc, char** argv) {
     // d(rho)/d(Gamma*t)
     HMotion hamil(cfg_file);
 
+    // Print out parameters
     std::cout << "In units of decay rate when applicable:" << std::endl
         << "    Decay rate: " << decay_rate << std::endl
         << "    Decay: " << (hamil.enable_decay ? "on" : "off") << std::endl
@@ -53,6 +54,27 @@ int main(int argc, char** argv) {
         << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
         << std::endl
         << "    Stepper tolerance: " << tol << std::endl
+        << std::endl;
+    
+    // Calculate quality metrics
+    double dopshift = hamil.recoil_freq_per_decay*init_k;
+    double rampsize = hamil.detun_amp_per_decay / (4*dopshift);
+    double qfactor = 0.5*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay
+        / (dopshift - hamil.recoil_freq_per_decay + hamil.rabi_freq_per_decay);
+    double adiabaticity = hamil.rabi_freq_per_decay*hamil.rabi_freq_per_decay
+        / (2*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay);
+    double splitting = 2*(dopshift - hamil.recoil_freq_per_decay)
+        / hamil.rabi_freq_per_decay;
+    
+    std::cout << "Quality metrics (* mildly low, ** very low):" << std::endl
+        << "    " << evaluate_quality_metric(rampsize)
+        << "Ramp size: " << rampsize << std::endl
+        << "    " << evaluate_quality_metric(qfactor)
+        << "Q factor: " << qfactor << std::endl
+        << "    " << evaluate_quality_metric(adiabaticity)
+        << "Adiabaticity: " << adiabaticity << std::endl
+        << "    " << evaluate_quality_metric(splitting)
+        << "Doppler splitting: " << splitting << std::endl
         << std::endl;
 
     // Approximate gamma*dt between output points
@@ -193,6 +215,21 @@ int main(int argc, char** argv) {
     // Output just the final k distribution to a separate file for convenience
     write_kdist(kdistfinalout, solution_endtime, rhofinal, hamil.handler);
     kdistfinalout.close();
+}
+
+std::string evaluate_quality_metric(
+    double metric,
+    double low_thresh,
+    double very_low_thresh,
+    std::string okay_str,
+    std::string low_str,
+    std::string very_low_str) {
+    if(metric < very_low_thresh) {
+        return very_low_str;
+    } else if(metric < low_thresh) {
+        return low_str;
+    }
+    return okay_str;
 }
 
 void initialize_cycle(std::vector<std::complex<double>>& rho,
