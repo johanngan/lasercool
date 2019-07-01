@@ -138,11 +138,12 @@ std::vector<std::complex<double>> HMotion::operator()(double gt,
 
     // 1/(i*HBAR) * [H, rho_c] + L(rho_c) from the master equation
     std::vector<std::complex<double>> drho_c(rho_c.size());
-    for(const auto& sub: handler.idxlist) {
+#pragma omp parallel for
+    for(auto it = handler.idxlist.begin(); it < handler.idxlist.end(); ++it) {
         unsigned nl, nr;
         int kl, kr;
         unsigned idx;
-        std::tie(nl, kl, nr, kr, idx) = sub;
+        std::tie(nl, kl, nr, kr, idx) = *it;
         handler.atidx(drho_c, idx) =
             -1i*(haction(rho_c, nl, kl, nr, kr, idx)
                  - std::conj(haction(rho_c, nr, kr, nl, kl)))

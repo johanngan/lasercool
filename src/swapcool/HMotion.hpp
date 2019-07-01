@@ -1,6 +1,10 @@
 #ifndef HMOTION_HPP_
 #define HMOTION_HPP_
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "HSwap.hpp"
 #include "DensMatHandler.hpp"
 

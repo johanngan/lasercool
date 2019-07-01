@@ -2,9 +2,11 @@ SHELL = /bin/sh
 AR = ar
 ARFLAGS = rvs
 CC = g++
-CFLAGS = -std=c++14 -O3 -flto -Wall -Wextra
+CFLAGS =
+ALL_CFLAGS = -std=c++14 -O3 -flto -Wall -Wextra $(CFLAGS)
 LD = g++
-LFLAGS = -O3 -flto
+LFLAGS =
+ALL_LFLAGS = -O3 -flto $(LFLAGS)
 
 prefix = .
 bindir = $(prefix)/bin
@@ -37,7 +39,7 @@ swapmotion: readcfg iotag $(bindir)/swapmotion
 swapcool: swapint swapmotion
 
 $(BINS):
-	$(LD) $(LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -o $@
+	$(LD) $(ALL_LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -o $@
 
 $(bindir)/optical_molasses: \
 $(builddir)/optical_molasses.o \
@@ -62,16 +64,16 @@ $(builddir)/swapmotion.o: swapmotion.cpp timestepping.hpp HMotion.hpp DensMatHan
 $(builddir)/HMotion.o: HMotion.cpp DensMatHandler.hpp
 
 $(builddir)/optical_molasses.o:
-	$(CC) -c $(CFLAGS) -I$(includedir) -I$(vendordir)/pcg-cpp-0.98/include $< -o $@
+	$(CC) -c $(ALL_CFLAGS) -I$(includedir) -I$(vendordir)/pcg-cpp-0.98/include $< -o $@
 
 $(builddir)/PhysicalParams.o \
 $(builddir)/swapint.o \
 $(builddir)/swapmotion.o \
 $(builddir)/HMotion.o:
-	$(CC) -c $(CFLAGS) -I$(includedir) $< -o $@
+	$(CC) -c $(ALL_CFLAGS) -I$(includedir) $< -o $@
 
 $(builddir)/%.o: %.cpp
-	$(CC) -c $(CFLAGS) -I$(includedir) $< -o $@
+	$(CC) -c $(ALL_CFLAGS) -I$(includedir) $< -o $@
 
 $(libdir)/lib%.a: $(builddir)/%.o
 	$(AR) $(ARFLAGS) $@ $<
