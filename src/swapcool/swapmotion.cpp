@@ -4,7 +4,7 @@
 #include "swapmotion.hpp"
 
 const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
-const std::string OUTPUT_DIR = "output/swapcool/swapmotion";
+const std::string DEFAULT_OUTPUT_DIR = "output/swapcool/swapmotion";
 const std::string RHO_OUTFILEBASE = "rho.out";
 const std::string KDIST_OUTFILEBASE = "kdist.out";
 const std::string KDIST_FINAL_OUTFILEBASE = "kdist_final.out";
@@ -15,21 +15,31 @@ const double APPROX_OUTPUT_PTS_PER_CYCLE = 100;
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
+    if(argc > 4) {
+        std::cout << "Usage: ./swapmotion [<output directory>] [<config file>]"
+            << " [--batch-mode]" << std::endl;
+        return 1;
+    }
+    // Read in a possible output directory
+    std::string output_dir = DEFAULT_OUTPUT_DIR;
+    if(argc > 1) {
+        output_dir = std::string(argv[1]);
+    }
     // Read in a possible config file
     std::string cfg_file = DEFAULT_CFG_FILE;
-    if(argc > 1) {
-        cfg_file = std::string(argv[1]);
+    if(argc > 2) {
+        cfg_file = std::string(argv[2]);
     }
     // In "batch mode", don't output any info to the console
     bool batchmode = false;
-    if(argc > 2) {
-        std::string mode(argv[2]);
+    if(argc > 3) {
+        std::string mode(argv[3]);
         if(mode == "-b" || mode == "--batch-mode") {
             batchmode = true;
         } else {
             std::cout << "Invalid argument: "
                 "\"-b\" or \"--batch-mode\" for batch mode, "
-                "otherwise omit second argument." << std::endl;
+                "otherwise omit third argument." << std::endl;
             return 1;
         }
     }
@@ -89,15 +99,15 @@ int main(int argc, char** argv) {
 
     std::ofstream rho_out(fullfile(tag_filename(
         RHO_OUTFILEBASE, oftag_ss.str()),
-        OUTPUT_DIR
+        output_dir
     ));
     std::ofstream kdistout(fullfile(tag_filename(
         KDIST_OUTFILEBASE, oftag_ss.str()),
-        OUTPUT_DIR
+        output_dir
     ));
     std::ofstream kdistfinalout(fullfile(tag_filename(
         KDIST_FINAL_OUTFILEBASE, oftag_ss.str()),
-        OUTPUT_DIR
+        output_dir
     ));
 
     // Write table headers

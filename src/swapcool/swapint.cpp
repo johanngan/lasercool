@@ -3,16 +3,26 @@
 #include "swapint.hpp"
 
 const std::string DEFAULT_CFG_FILE = "config/params_swapcool.cfg";
-const std::string OUTPUT_DIR = "output/swapcool/swapint";
+const std::string DEFAULT_OUTPUT_DIR = "output/swapcool/swapint";
 const std::string RHO_OUTFILEBASE = "rho.out";
 const std::string CYCLE_OUTFILEBASE = "cycles.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
+    if(argc > 3) {
+        std::cout << "Usage: ./swapint [<output directory>] [<config file>]"
+            << std::endl;
+        return 1;
+    }
+    // Read in a possible output directory
+    std::string output_dir = DEFAULT_OUTPUT_DIR;
+    if(argc > 1) {
+        output_dir = std::string(argv[1]);
+    }
     // Read in a possible config file
     std::string cfg_file = DEFAULT_CFG_FILE;
-    if(argc > 1) {
-        cfg_file = std::string(argv[1]);
+    if(argc > 2) {
+        cfg_file = std::string(argv[2]);
     }
 
     double duration_by_decay, tol;
@@ -35,7 +45,7 @@ int main(int argc, char** argv) {
         << "_Omega" << hamil.rabi_freq_per_decay;
     std::ofstream cyclesout(fullfile(tag_filename(
         CYCLE_OUTFILEBASE, oftag_ss.str()),
-        OUTPUT_DIR
+        output_dir
     ));
     for(double gt = 0; gt < duration_by_decay;
         gt += 1./(100*hamil.detun_freq_per_decay)) {
@@ -47,7 +57,7 @@ int main(int argc, char** argv) {
 
     std::ofstream rho_out(fullfile(tag_filename(
         RHO_OUTFILEBASE, oftag_ss.str()),
-        OUTPUT_DIR
+        output_dir
     ));
 
     // Set the initial condition to be all in the ground state

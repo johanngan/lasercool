@@ -1,21 +1,26 @@
 #include "optical_molasses.hpp"
 
 const std::string DEFAULT_CFG_FILE = "config/params_optmol.cfg";
-const std::string OUTPUT_DIR = "output/optmol";
+const std::string DEFAULT_OUTPUT_DIR = "output/optmol";
 const std::string ENERGY_OUTFILEBASE = "avgKE.out";
 const std::string SPEED_DISTR_OUTFILEBASE = "speed_distr.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
-    if(argc < 2) {
-        std::cout << "Usage: ./optical_molasses <particle species> [<config file>]"
-            << std::endl;
+    if(argc < 2 || argc > 4) {
+        std::cout << "Usage: ./optical_molasses <particle species>"
+            << " [<output directory>] [<config file>]" << std::endl;
         return 1;
+    }
+    // Read in a possible output directory
+    std::string output_dir = DEFAULT_OUTPUT_DIR;
+    if(argc > 2) {
+        output_dir = std::string(argv[2]);
     }
     // Read in a possible config file
     std::string cfg_file = DEFAULT_CFG_FILE;
-    if(argc > 2) {
-        cfg_file = std::string(argv[2]);
+    if(argc > 3) {
+        cfg_file = std::string(argv[3]);
     }
 
     // Get params
@@ -67,7 +72,7 @@ int main(int argc, char** argv) {
 
     std::ofstream energy_outfile(fullfile(tag_filename(
         ENERGY_OUTFILEBASE, suffix_ss.str(), params.particle_species),
-        OUTPUT_DIR));
+        output_dir));
     // Number of energy snapshots to take
     unsigned n_snapshots = 1001;
     unsigned steps_between_snapshots = params.n_time_steps / (n_snapshots - 1);
@@ -79,7 +84,7 @@ int main(int argc, char** argv) {
     std::ofstream speed_init_outfile(fullfile(tag_filename(
         SPEED_DISTR_OUTFILEBASE, {"initial", suffix_ss.str()},
         params.particle_species),
-        OUTPUT_DIR
+        output_dir
     ));
     for(auto vp: v_particles) {
         speed_init_outfile << sqrt(sqr(vp[0]) + sqr(vp[1]) + sqr(vp[2]))
@@ -199,7 +204,7 @@ int main(int argc, char** argv) {
     std::ofstream speed_final_outfile(fullfile(tag_filename(
         SPEED_DISTR_OUTFILEBASE, {"final", suffix_ss.str()},
         params.particle_species),
-        OUTPUT_DIR
+        output_dir
     ));
     for(auto vp: v_particles) {
         speed_final_outfile << sqrt(sqr(vp[0]) + sqr(vp[1]) + sqr(vp[2]))
