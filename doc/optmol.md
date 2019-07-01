@@ -20,7 +20,7 @@ Pairs of particles can collide with each other in a random scattering event, whi
 If there are N particles, then every time step, N/2 random "candidate pairs" are chosen, so that if all the collisions happened, every particle is expected to participate in one collision. Out of the candidate pairs, each randomly collides or doesn't collide with a probability dependent on the relative speed of the pair. The collision probablity comes from [this paper](http://www.physics.purdue.edu/~robichf/papers/PoP10_2217.pdf), and is computed by matching `<theta^2>` in the "random rotation" model implemented in this code to the theoretical value given in the paper.
 
 # Usage
-Run `make optmol` in the top-level directory, set the parameters in `/config/params_optmol.cfg`, then run `/bin/optical_molasses` with the particle species string as an argument. Optionally, give the path to the configuration file to use.
+Run `make optmol` in the top-level directory, set the parameters in `/config/params_optmol.cfg`, then run `/bin/optical_molasses` with the particle species string as an argument. Optionally give the path to the directory to write output to, and the path to the configuration file to use.
 
 ## Species string
 The particle species string sets the mass, decay rate, and transition frequency of the particle. These are hard coded with other fundamental constants in `constants.*pp`. Available species:
