@@ -270,8 +270,8 @@ void print_system_info(const std::vector<std::complex<double>>& rho,
     double dopshift = hamil.recoil_freq_per_decay
         * calc_krms(rho, hamil.handler);
     double rampsize = hamil.detun_amp_per_decay / (4*dopshift);
-    double qfactor = 0.5*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay
-        / (dopshift - hamil.recoil_freq_per_decay + hamil.rabi_freq_per_decay);
+    double qfactor = hamil.detun_amp_per_decay*hamil.detun_freq_per_decay
+        / (2*(dopshift - hamil.recoil_freq_per_decay) + hamil.rabi_freq_per_decay);
     double adiabaticity = hamil.rabi_freq_per_decay*hamil.rabi_freq_per_decay
         / (2*hamil.detun_amp_per_decay*hamil.detun_freq_per_decay);
     double splitting = 2*(dopshift - hamil.recoil_freq_per_decay)
