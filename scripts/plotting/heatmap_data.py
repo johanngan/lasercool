@@ -4,7 +4,6 @@ Generate a heatmap plot from data in tall ordered format.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 
 ######## CONFIGURATION ########
