@@ -23,7 +23,8 @@ x = data[::len(y), 0]
 X, Y = np.meshgrid(x, y)
 Z = np.reshape(data[:, 2], X.shape, order='F')
 
-plt.pcolormesh(X, Y, Z, cmap=cmap)
-plt.colorbar()
+fig, ax = plt.subplots()
+im = ax.pcolormesh(X, Y, Z, cmap=cmap)
+fig.colorbar(im, ax=ax)
 
 plt.show()
