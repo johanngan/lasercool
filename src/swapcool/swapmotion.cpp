@@ -14,6 +14,12 @@ const std::string KDIST_FINAL_OUTFILEBASE = "kdist_final.out";
 const double APPROX_OUTPUT_PTS_PER_CYCLE = 100;
 const unsigned OUTFILENAME_PRECISION = 3;
 
+// Convenience function
+template<typename T>
+inline T sqr(T x) {
+    return x*x;
+}
+
 int main(int argc, char** argv) {
     if(argc > 4) {
         std::cout << "Usage: ./swapmotion [<output directory>] [<config file>]"
@@ -44,15 +50,18 @@ int main(int argc, char** argv) {
         }
     }
 
-    double duration_by_decay, tol, init_temp, init_k_double;
+    double duration_by_decay, tol, init_temp, init_k_double,
+        use_antihydrogen_distr_double;
     load_params(cfg_file,
         {
             {"duration", &duration_by_decay},
             {"tolerance", &tol},
             {"initial_temperature", &init_temp},
-            {"initial_momentum", &init_k_double}
+            {"initial_momentum", &init_k_double},
+            {"use_antihydrogen_distr", &use_antihydrogen_distr_double}
         }
     );
+    bool use_antihydrogen_distr = static_cast<bool>(use_antihydrogen_distr_double);
     bool is_thermal = true;
     int init_k;
     if(!std::isnan(init_k_double)) {
@@ -68,8 +77,14 @@ int main(int argc, char** argv) {
     // Initialize state
     std::vector<std::complex<double>> rho_c;
     if(is_thermal) {
-        // Initialize to thermal distribution
-        rho_c = thermal_state(init_temp, hamil);
+        if(use_antihydrogen_distr) {
+            // Initialize to the antihydrogen thermal-derived distribution, which
+            // has more population in higher momentum states
+            rho_c = antihydrogen_2s_state(init_temp, hamil);
+        } else {
+            // Initialize to normal thermal distribution
+            rho_c = thermal_state(init_temp, hamil);
+        }
     } else {
         // Initialize all in one k-state
         rho_c.resize(hamil.handler.idxmap.size());
@@ -79,7 +94,7 @@ int main(int argc, char** argv) {
     // Print out stuff if not in batch mode
     if(!batchmode) {
         print_system_info(rho_c, hamil, init_temp, init_k, is_thermal,
-            duration_by_decay, tol);
+            use_antihydrogen_distr, duration_by_decay, tol);
     }
 
     // Form output files
@@ -234,9 +249,62 @@ std::vector<std::complex<double>> thermal_state(double temp,
     return rho;
 }
 
+double k_axial_distr_integrand(double k, void* params) {
+    double k_axial = ((double*)params)[0];
+    double sigma = ((double*)params)[1];
+    return k*std::exp(-0.5*sqr(k/sigma)) / sqrt(1 - sqr(k_axial/k));
+}
+double k_axial_distr(double k_axial, double sigma, gsl_integration_workspace* w,
+    double abserr = 0, double relerr = 1e-7) {
+    gsl_function F;
+    // Symmetric
+    k_axial = std::abs(k_axial);
+
+    // Synthesize param array
+    double* params = new double[2];
+    params[0] = k_axial;
+    params[1] = sigma;
+
+    F.function = &k_axial_distr_integrand;
+    F.params = (void*)params;
+    // Integrate magnitude sqrt(k_trans^2 + k_axial^2) out to n*sqrt(3)*sigma
+    // which is equivalent to having k_x = k_y = k_z = n*sigma
+    double nstddevs = 5;
+    double a = k_axial, b = nstddevs*sqrt(3)*params[1];
+    double result, error;
+    gsl_integration_qags(&F, a, b, abserr, relerr, w->limit, w, &result, &error);
+
+    delete[] params;
+    return result;
+}
+
+std::vector<std::complex<double>> antihydrogen_2s_state(double temp,
+    const HMotion& hamil) {
+    gsl_integration_workspace* w = gsl_integration_workspace_alloc(1000);
+
+    // Compute weights and the partition function
+    std::vector<std::complex<double>> rho(hamil.handler.idxmap.size());
+    double partition_fn = 0;
+    for(int k = hamil.handler.kmin; k <= hamil.handler.kmax; ++k) {
+        double sigma = sqrt(hamil.K_BOLTZMANN*temp / (
+            2*hamil.HBAR*hamil.recoil_freq_per_decay*hamil.decay_rate));
+        double weight = k_axial_distr(k, sigma, w);
+        partition_fn += weight;
+        hamil.handler.at(rho, 1, k, 1, k) = weight;
+    }
+
+    gsl_integration_workspace_free(w);
+
+    // Normalize by partition function
+    for(int k = hamil.handler.kmin; k <= hamil.handler.kmax; ++k) {
+        hamil.handler.at(rho, 1, k, 1, k) /= partition_fn;
+    }
+    return rho;
+}
+
 void print_system_info(const std::vector<std::complex<double>>& rho,
     const HMotion& hamil, double init_temp, double init_k, bool is_thermal,
-    double duration_by_decay, double tol) {
+    bool use_antihydrogen_distr, double duration_by_decay, double tol) {
     // Parameters
     std::cout << "In units of decay rate when applicable:" << std::endl
         << "    Decay rate: " << hamil.decay_rate << std::endl
@@ -252,7 +320,9 @@ void print_system_info(const std::vector<std::complex<double>>& rho,
         << std::endl;
 
     if(is_thermal) {
-        std::cout << "    Initial temperature: " << init_temp << " K"
+        std::cout << "    Initial temperature ("
+            << (use_antihydrogen_distr ? "antihydrogen 2s axial" : "thermal")
+            << " distribution): " << init_temp << " K"
             << std::endl;
     } else {
         std::cout << "    Initial momentum state: " << init_k << std::endl;

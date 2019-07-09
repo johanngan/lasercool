@@ -8,6 +8,7 @@
 #include <complex>
 #include <vector>
 #include <chrono>
+#include <gsl/gsl_integration.h>
 #include "HMotion.hpp"
 #include "DensMatHandler.hpp"
 #include "lasercool/readcfg.hpp"
@@ -16,9 +17,14 @@
 
 // Generate a thermal state
 std::vector<std::complex<double>> thermal_state(double, const HMotion&);
+// Numerically compute the integral for the weight for an axial momentum state
+// under a given thermal standard deviation
+double k_axial_distr(double, double, gsl_integration_workspace*, double, double);
+// Generate the antihydrogen 2s "thermal-derived" state
+std::vector<std::complex<double>> antihydrogen_2s_state(double, const HMotion&);
 // Print out information about the system
 void print_system_info(const std::vector<std::complex<double>>&,
-    const HMotion&, double, double, bool, double, double);
+    const HMotion&, double, double, bool, bool, double, double);
 // Calculate the RMS k value of a state
 double calc_krms(const std::vector<std::complex<double>>&,
     const DensMatHandler&);

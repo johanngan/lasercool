@@ -23,13 +23,14 @@ $(srcdir)/readcfg:\
 $(srcdir)/optmol:\
 $(srcdir)/swapcool
 
-PROG = optical_molasses swapint swapmotion
+# swapmotion needs extra linking for GSL integration
+PROG = optical_molasses swapint
 BINS = $(addprefix $(bindir)/, $(PROG))
 ARCHIVES = libreadcfg.a libiotag.a
 LIBS = $(addprefix $(libdir)/, $(ARCHIVES))
 
 .PHONY: all clean libs readcfg iotag optmol swapint swapmotion swapcool
-all: $(LIBS) $(BINS)
+all: $(LIBS) $(BINS) swapmotion
 libs: $(LIBS)
 readcfg: $(libdir)/libreadcfg.a
 iotag: $(libdir)/libiotag.a
@@ -40,6 +41,9 @@ swapcool: swapint swapmotion
 
 $(BINS):
 	$(LD) $(ALL_LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -o $@
+
+$(bindir)/swapmotion:
+	$(LD) $(ALL_LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -lgsl -lgslcblas -lm -o $@
 
 $(bindir)/optical_molasses: \
 $(builddir)/optical_molasses.o \
