@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
             - cycle/hamil.detun_freq_per_decay;
         
         // Prepare the density matrix for a new cycle
-        initialize_cycle(rho_c, hamil);
+        hamil.initialize_cycle(rho_c);
         // Solve a full/partial system cycle in natural units with adaptive RK
         auto rho_c_solution = timestepping::odesolve(hamil, rho_c,
             endtime, timestepping::AdaptiveRK(tol));
@@ -312,49 +312,6 @@ std::string evaluate_quality_metric(
         return low_str;
     }
     return okay_str;
-}
-
-void initialize_cycle(std::vector<std::complex<double>>& rho,
-    const HMotion& hamil) {
-    for(int kl = hamil.handler.kmin; kl <= hamil.handler.kmax; ++kl) {
-        for(int kr = hamil.handler.kmin; kr <= hamil.handler.kmax; ++kr) {
-            // Excited state population and intra-excited-state coherences
-            // distribute between the lower energy states
-            if(hamil.handler.has(0, kl, 0, kr)) {
-                hamil.handler.at(rho, 0, kl, 0, kr) += (1 - hamil.branching_ratio)
-                    * hamil.handler.ele(rho, 2, kl, 2, kr);
-            }
-            if(hamil.handler.has(1, kl, 1, kr)) {
-                hamil.handler.at(rho, 1, kl, 1, kr) +=
-                    hamil.stationary_decay_prob*hamil.branching_ratio
-                    * hamil.handler.ele(rho, 2, kl, 2, kr);
-            }
-            if(kl - 1 >= hamil.handler.kmin && kr - 1 >= hamil.handler.kmin
-                && hamil.handler.has(1, kl-1, 1, kr-1)) {
-                hamil.handler.at(rho, 1, kl-1, 1, kr-1) +=
-                    (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
-                    * hamil.handler.ele(rho, 2, kl, 2, kr);
-            }
-            if(kl + 1 <= hamil.handler.kmax && kr + 1 <= hamil.handler.kmax
-                && hamil.handler.has(1, kl+1, 1, kr+1)) {
-                hamil.handler.at(rho, 1, kl+1, 1, kr+1) +=
-                    (1-hamil.stationary_decay_prob)/2*hamil.branching_ratio
-                    * hamil.handler.ele(rho, 2, kl, 2, kr);
-            }
-
-            // Excited state and excited-state coherences decay to 0
-            if(hamil.handler.has(2, kl, 2, kr)) {
-                hamil.handler.at(rho, 2, kl, 2, kr) = 0;
-            }
-            if(hamil.handler.has(1, kl, 2, kr)) {
-                hamil.handler.at(rho, 1, kl, 2, kr) = 0;
-            }
-            if(hamil.handler.has(2, kl, 1, kr)) {
-                hamil.handler.at(rho, 2, kl, 1, kr) = 0;
-            }
-        }
-    }
-    return;
 }
 
 void write_state_info(std::ofstream& outfile, double t,

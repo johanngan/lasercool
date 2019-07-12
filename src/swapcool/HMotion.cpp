@@ -151,3 +151,45 @@ std::vector<std::complex<double>> HMotion::operator()(double gt,
     }
     return drho_c;
 }
+
+void HMotion::initialize_cycle(std::vector<std::complex<double>>& rho) const {
+    for(int kl = handler.kmin; kl <= handler.kmax; ++kl) {
+        for(int kr = handler.kmin; kr <= handler.kmax; ++kr) {
+            // Excited state population and intra-excited-state coherences
+            // distribute between the lower energy states
+            if(handler.has(0, kl, 0, kr)) {
+                handler.at(rho, 0, kl, 0, kr) += (1 - branching_ratio)
+                    * handler.ele(rho, 2, kl, 2, kr);
+            }
+            if(handler.has(1, kl, 1, kr)) {
+                handler.at(rho, 1, kl, 1, kr) +=
+                    stationary_decay_prob*branching_ratio
+                    * handler.ele(rho, 2, kl, 2, kr);
+            }
+            if(kl - 1 >= handler.kmin && kr - 1 >= handler.kmin
+                && handler.has(1, kl-1, 1, kr-1)) {
+                handler.at(rho, 1, kl-1, 1, kr-1) +=
+                    (1-stationary_decay_prob)/2*branching_ratio
+                    * handler.ele(rho, 2, kl, 2, kr);
+            }
+            if(kl + 1 <= handler.kmax && kr + 1 <= handler.kmax
+                && handler.has(1, kl+1, 1, kr+1)) {
+                handler.at(rho, 1, kl+1, 1, kr+1) +=
+                    (1-stationary_decay_prob)/2*branching_ratio
+                    * handler.ele(rho, 2, kl, 2, kr);
+            }
+
+            // Excited state and excited-state coherences decay to 0
+            if(handler.has(2, kl, 2, kr)) {
+                handler.at(rho, 2, kl, 2, kr) = 0;
+            }
+            if(handler.has(1, kl, 2, kr)) {
+                handler.at(rho, 1, kl, 2, kr) = 0;
+            }
+            if(handler.has(2, kl, 1, kr)) {
+                handler.at(rho, 2, kl, 1, kr) = 0;
+            }
+        }
+    }
+    return;
+}

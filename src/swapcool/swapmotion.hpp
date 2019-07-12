@@ -30,8 +30,6 @@ std::string evaluate_quality_metric(
     std::string okay_str="",
     std::string low_str="*",
     std::string very_low_str="**");
-// Modify the density matrix in preparation for a new cycle
-void initialize_cycle(std::vector<std::complex<double>>&, const HMotion&);
 // Write state info to a file given the density matrix at a fixed time
 void write_state_info(std::ofstream&, double,
     const std::vector<std::complex<double>>&, const DensMatHandler&);
