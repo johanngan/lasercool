@@ -1,7 +1,7 @@
 #include "DensMatHandler.hpp"
 
-DensMatHandler::DensMatHandler(int kmin, int kmax):
-    nint(3), kmin(kmin), kmax(kmax) {
+DensMatHandler::DensMatHandler(int kvalmin, int kvalmax, int ksubdivs):
+    nint(3), kmin(ksubdivs*kvalmin), kmax(ksubdivs*kvalmax), ksubdivs(ksubdivs) {
     if(kmin > kmax) {
         throw std::invalid_argument("Min momentum greater than max momentum.");
     }
@@ -35,6 +35,14 @@ DensMatHandler::DensMatHandler(int kmin, int kmax):
             idxlist.push_back({1, kl, 2, kr, subidx(1, kl, 2, kr)});
         }
     }
+}
+
+double DensMatHandler::kval(int kidx) const {
+    return static_cast<double>(kidx) / ksubdivs;
+}
+
+int DensMatHandler::closest_kidx(double kval) const {
+    return std::round(kval * ksubdivs);
 }
 
 unsigned DensMatHandler::subidx(
@@ -104,8 +112,8 @@ std::complex<double> DensMatHandler::totaltr(
     const std::vector<std::complex<double>>& rho_c) const {
     std::complex<double> tr = 0;
     for(unsigned n = 0; n < nint; ++n) {
-        for(int k = kmin; k <= kmax; ++k) {
-            tr += ele(rho_c, n, k, n, k);
+        for(int kidx = kmin; kidx <= kmax; ++kidx) {
+            tr += ele(rho_c, n, kidx, n, kidx);
         }
     }
     return tr;
@@ -114,17 +122,17 @@ std::complex<double> DensMatHandler::totaltr(
 std::complex<double> DensMatHandler::partialtr_k(
     const std::vector<std::complex<double>>& rho_c, unsigned n) const {
     std::complex<double> tr = 0;
-    for(int k = kmin; k <= kmax; ++k) {
-        tr += ele(rho_c, n, k, n, k);
+    for(int kidx = kmin; kidx <= kmax; ++kidx) {
+        tr += ele(rho_c, n, kidx, n, kidx);
     }
     return tr;
 }
 
 std::complex<double> DensMatHandler::partialtr_n(
-    const std::vector<std::complex<double>>& rho_c, int k) const {
+    const std::vector<std::complex<double>>& rho_c, int kidx) const {
     std::complex<double> tr = 0;
     for(unsigned n = 0; n < nint; ++n) {
-        tr += ele(rho_c, n, k, n, k);
+        tr += ele(rho_c, n, kidx, n, kidx);
     }
     return tr;
 }

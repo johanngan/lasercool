@@ -13,10 +13,13 @@
 // including interaction with the laser and also motional states
 struct HMotion : public HSwap {
     const double SPEED_OF_LIGHT, K_BOLTZMANN;
-    // probability to decay from excited state without changing momentum
-    double stationary_decay_prob;
     double recoil_freq_per_decay;
     DensMatHandler handler;
+    // Probabilities from subdividing dipole radiation into sectors
+    // Only tracks the forward region, from dk = 0 to dk = 1, in ascending order.
+    // The value for dk = 0 is half the actual value, which will be double-counted
+    // when accounting for the negative dk values.
+    std::vector<double> diprad_probs;
 
     HMotion(std::string);
 

@@ -14,6 +14,7 @@
 struct DensMatHandler {
     unsigned nint;  // number of internal states
     int kmin, kmax;   // range of tracked k values
+    int ksubdivs;   // number of subdivisons per integer k value
     unsigned kstates;   // number of k states
     // linear index increments for transversing (nl, kl, nr, kr), and
     // jointly (nl & nr), (kl & kr)
@@ -27,7 +28,12 @@ struct DensMatHandler {
     // precomputed for speed
     std::vector<std::tuple<unsigned, int, unsigned, int, unsigned>> idxlist;
 
-    DensMatHandler(int kmin=0, int kmax=0);
+    DensMatHandler(int kmin=0, int kmax=0, int ksubdivs=1);
+
+    // Convert k index to its k value, for when ksubdivs > 1.
+    double kval(int kidx) const;
+    // Convert a k value to its closes k index, for when ksubdivs > 1.
+    int closest_kidx(double kval) const;
 
     // Convert state subscripts to linear indexes in the density matrix,
     // enumerated as |n-left, k-left><n-right, k-right|

@@ -4,19 +4,30 @@ using namespace std::complex_literals;
 template<typename T>
 inline T sqr(T x) {return x*x;}
 
+// Analytical form of the dipole integral between theta1 and theta2
+// Integral from theta1 to theta2 of 2/pi*sin^2(theta)d(theta)
+double dipole_integral(double theta1, double theta2) {
+    return (theta2 - theta1 - 0.5*(sin(2*theta2) - sin(2*theta1))) / M_PI;
+}
+
 HMotion::HMotion(std::string fname):HSwap(fname),
-    SPEED_OF_LIGHT(299792458), K_BOLTZMANN(1.380649e-23),
-    stationary_decay_prob(0.6) {
-    double mass, init_temp, ksigmas, kmin_double, kmax_double;
+    SPEED_OF_LIGHT(299792458), K_BOLTZMANN(1.380649e-23) {
+    double mass, init_temp, ksigmas, kmin_double, kmax_double, ksubdivs_double;
     load_params(fname,
         {
             {"mass", &mass},
             {"initial_temperature", &init_temp},
             {"momentum_stddevs", &ksigmas},
             {"min_momentum", &kmin_double},
-            {"max_momentum", &kmax_double}
+            {"max_momentum", &kmax_double},
+            {"momentum_subdivisions", &ksubdivs_double}
         }
     );
+    // Default to 1 subdivision (i.e. only tracking integer values)
+    if(std::isnan(ksubdivs_double)) {
+        ksubdivs_double = 1;
+    }
+
     double k_photon_per_decay = transition_angfreq_per_decay/SPEED_OF_LIGHT;
     recoil_freq_per_decay = HBAR*sqr(k_photon_per_decay)*decay_rate/(2*mass);
 
@@ -40,7 +51,27 @@ HMotion::HMotion(std::string fname):HSwap(fname),
         ));
         kmin = -kmax;
     }
-    handler = DensMatHandler(kmin, kmax);
+
+    // Subdivide the k states
+    handler = DensMatHandler(kmin, kmax, static_cast<int>(ksubdivs_double));
+
+    // Compute the dipole radiation probabilities for each sector
+    diprad_probs.reserve(handler.ksubdivs+1);
+    for(int dkidx = 0; dkidx <= handler.ksubdivs; ++dkidx) {
+        // The actual k value is the k index divided by the number of
+        // subdivisions, m.
+        // Sector for each k value has boundaries of theta where
+        // cos(theta) = (k +- 1/2)/m
+        // halfway between the sector's k value and those of the sectors
+        // immediately above and below. The boundaries are capped at
+        // k/m = 0, 1, so as not to overcount k/m = 1(forward) and to
+        // half-count k/m = 0 (transverse), to compensate for double counting
+        // when implementing the population decay term.
+        double upper = std::min(1., (dkidx + 0.5) / handler.ksubdivs);
+        double lower = std::max(0., (dkidx - 0.5) / handler.ksubdivs);
+        diprad_probs.push_back(dipole_integral(
+            acos(upper), acos(lower)));
+    }
 }
 
 std::complex<double> HMotion::haction(
@@ -52,7 +83,7 @@ std::complex<double> HMotion::haction(
     std::complex<double> val = 0;
 
     // Diagonal contribution
-    double diag_coeff = recoil_freq_per_decay*sqr(kl);
+    double diag_coeff = recoil_freq_per_decay*sqr(handler.kval(kl));
     switch(nl) {
         case 1: diag_coeff += cachehalfdetun; break;
         case 2: diag_coeff -= cachehalfdetun; break;
@@ -68,11 +99,15 @@ std::complex<double> HMotion::haction(
     if(nl > 0) {
         // in rho_c, flip nl: 1 -> 2, 2 -> 1
         unsigned nlflip = !(nl - 1) + 1;
-        if(kl - 1 >= handler.kmin) {
-            val += cachehalfrabi*handler.ele(rho_c, nlflip, kl-1, nr, kr);
+        // Kick the index up and down by ksubdivs, so that the actual k value
+        // gets a full kick of dk = 1
+        if(kl - handler.ksubdivs >= handler.kmin) {
+            val += cachehalfrabi*handler.ele(rho_c,
+                nlflip, kl-handler.ksubdivs, nr, kr);
         }
-        if(kl + 1 <= handler.kmax) {
-            val += cachehalfrabi*handler.ele(rho_c, nlflip, kl+1, nr, kr);
+        if(kl + handler.ksubdivs <= handler.kmax) {
+            val += cachehalfrabi*handler.ele(rho_c,
+                nlflip, kl+handler.ksubdivs, nr, kr);
         }
     }
 
@@ -91,15 +126,21 @@ std::complex<double> HMotion::decayterm(
             case 1:
             {
                 // Approximate anisotropic dipole radiation pattern
-                std::complex<double> diprad = stationary_decay_prob
-                    * handler.ele(rho_c, 2, kl, 2, kr);
-                if(kl-1 >= handler.kmin && kr-1 >= handler.kmin) {
-                    diprad += (1-stationary_decay_prob)/2
-                        * handler.ele(rho_c, 2, kl-1, 2, kr-1);
-                }
-                if(kl+1 <= handler.kmax && kr+1 <= handler.kmax) {
-                    diprad += (1-stationary_decay_prob)/2
-                        * handler.ele(rho_c, 2, kl+1, 2, kr+1);
+                std::complex<double> diprad = 0;
+                // Double counts dk = 0, but the diprad_probs entry is halved, so
+                // it evens out
+                for(int dkidx = 0; dkidx < static_cast<int>(diprad_probs.size());
+                    ++dkidx) {
+                    // Decay from below
+                    if(kl - dkidx >= handler.kmin && kr - dkidx >= handler.kmin) {
+                        diprad += diprad_probs[dkidx] * handler.ele(rho_c,
+                            2, kl - dkidx, 2, kr - dkidx);
+                    }
+                    // Decay from above
+                    if(kl + dkidx <= handler.kmax && kr + dkidx <= handler.kmax) {
+                        diprad += diprad_probs[dkidx] * handler.ele(rho_c,
+                            2, kl + dkidx, 2, kr + dkidx);
+                    }
                 }
                 return branching_ratio * diprad;
             }
@@ -161,22 +202,25 @@ void HMotion::initialize_cycle(std::vector<std::complex<double>>& rho) const {
                 handler.at(rho, 0, kl, 0, kr) += (1 - branching_ratio)
                     * handler.ele(rho, 2, kl, 2, kr);
             }
-            if(handler.has(1, kl, 1, kr)) {
-                handler.at(rho, 1, kl, 1, kr) +=
-                    stationary_decay_prob*branching_ratio
-                    * handler.ele(rho, 2, kl, 2, kr);
-            }
-            if(kl - 1 >= handler.kmin && kr - 1 >= handler.kmin
-                && handler.has(1, kl-1, 1, kr-1)) {
-                handler.at(rho, 1, kl-1, 1, kr-1) +=
-                    (1-stationary_decay_prob)/2*branching_ratio
-                    * handler.ele(rho, 2, kl, 2, kr);
-            }
-            if(kl + 1 <= handler.kmax && kr + 1 <= handler.kmax
-                && handler.has(1, kl+1, 1, kr+1)) {
-                handler.at(rho, 1, kl+1, 1, kr+1) +=
-                    (1-stationary_decay_prob)/2*branching_ratio
-                    * handler.ele(rho, 2, kl, 2, kr);
+
+            // Double counts dk = 0, but the diprad_probs entry is halved, so
+            // it evens out
+            for(int dkidx = 0; dkidx < static_cast<int>(diprad_probs.size());
+                ++dkidx) {
+                // Decay up
+                if(handler.has(1, kl + dkidx, 1, kr + dkidx)) {
+                    if(kl + dkidx <= handler.kmax && kr + dkidx <= handler.kmax) {
+                        handler.at(rho, 1, kl + dkidx, 1, kr + dkidx) +=
+                            diprad_probs[dkidx] * handler.ele(rho, 2, kl, 2, kr);
+                    }
+                }
+                // Decay down
+                if(handler.has(1, kl - dkidx, 1, kr - dkidx)) {
+                    if(kl - dkidx >= handler.kmin && kr - dkidx >= handler.kmin) {
+                        handler.at(rho, 1, kl - dkidx, 1, kr - dkidx) +=
+                            diprad_probs[dkidx] * handler.ele(rho, 2, kl, 2, kr);
+                    }
+                }
             }
 
             // Excited state and excited-state coherences decay to 0

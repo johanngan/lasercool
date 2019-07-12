@@ -14,6 +14,9 @@ const std::string KDIST_FINAL_OUTFILEBASE = "kdist_final.out";
 const double APPROX_OUTPUT_PTS_PER_CYCLE = 100;
 const unsigned OUTFILENAME_PRECISION = 3;
 
+template<typename T>
+inline T sqr(T x) {return x*x;}
+
 int main(int argc, char** argv) {
     if(argc > 4) {
         std::cout << "Usage: ./swapmotion [<output directory>] [<config file>]"
@@ -44,21 +47,19 @@ int main(int argc, char** argv) {
         }
     }
 
-    double duration_by_decay, tol, init_temp, init_k_double;
+    double duration_by_decay, tol, init_temp, init_k;
     load_params(cfg_file,
         {
             {"duration", &duration_by_decay},
             {"tolerance", &tol},
             {"initial_temperature", &init_temp},
-            {"initial_momentum", &init_k_double}
+            {"initial_momentum", &init_k}
         }
     );
     bool is_thermal = true;
-    int init_k;
-    if(!std::isnan(init_k_double)) {
+    if(!std::isnan(init_k)) {
         // Override temperature and start from a fixed k
         is_thermal = false;
-        init_k = static_cast<double>(init_k_double);
     }
 
     // Form the derivative operator, in natural units
@@ -72,8 +73,9 @@ int main(int argc, char** argv) {
         rho_c = thermal_state(init_temp, hamil);
     } else {
         // Initialize all in one k-state
+        int kidx = hamil.handler.closest_kidx(init_k);
         rho_c.resize(hamil.handler.idxmap.size());
-        hamil.handler.at(rho_c, 1, init_k, 1, init_k) = 1;
+        hamil.handler.at(rho_c, 1, kidx, 1, kidx) = 1;
     }
 
     // Print out stuff if not in batch mode
@@ -112,13 +114,13 @@ int main(int argc, char** argv) {
 
     // Write table headers
     rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
-    for(int k = (hamil.handler.kmax*hamil.handler.kmin <= 0 ?
+    for(int kidx = (hamil.handler.kmax*hamil.handler.kmin <= 0 ?
             0 : std::min(std::abs(hamil.handler.kmax),
                          std::abs(hamil.handler.kmin)));
-        k <= std::max(std::abs(hamil.handler.kmax),
+        kidx <= std::max(std::abs(hamil.handler.kmax),
                       std::abs(hamil.handler.kmin));
-        ++k) {
-        rho_out << " |k" << k << "|";
+        ++kidx) {
+        rho_out << " |k" << hamil.handler.kval(kidx) << "|";
     }
     rho_out << " |k_rms|";
     rho_out << std::endl;
@@ -220,16 +222,16 @@ std::vector<std::complex<double>> thermal_state(double temp,
     const HMotion& hamil) {
     std::vector<std::complex<double>> rho(hamil.handler.idxmap.size());
     double partition_fn = 0;
-    for(int k = hamil.handler.kmin; k <= hamil.handler.kmax; ++k) {
+    for(int kidx = hamil.handler.kmin; kidx <= hamil.handler.kmax; ++kidx) {
         double boltz_weight = std::exp(
-            -hamil.HBAR*hamil.recoil_freq_per_decay*hamil.decay_rate*k*k
-            / (hamil.K_BOLTZMANN*temp));
+            -hamil.HBAR*hamil.recoil_freq_per_decay*hamil.decay_rate
+            * sqr(hamil.handler.kval(kidx)) / (hamil.K_BOLTZMANN*temp));
         partition_fn += boltz_weight;
-        hamil.handler.at(rho, 1, k, 1, k) = boltz_weight;
+        hamil.handler.at(rho, 1, kidx, 1, kidx) = boltz_weight;
     }
     // Normalize by partition function
-    for(int k = hamil.handler.kmin; k <= hamil.handler.kmax; ++k) {
-        hamil.handler.at(rho, 1, k, 1, k) /= partition_fn;
+    for(int kidx = hamil.handler.kmin; kidx <= hamil.handler.kmax; ++kidx) {
+        hamil.handler.at(rho, 1, kidx, 1, kidx) /= partition_fn;
     }
     return rho;
 }
@@ -258,8 +260,10 @@ void print_system_info(const std::vector<std::complex<double>>& rho,
         std::cout << "    Initial momentum state: " << init_k << std::endl;
     }
     std::cout << "    Momentum state range: ["
-        << hamil.handler.kmin << ", " << hamil.handler.kmax
-        << "]" << std::endl
+        << hamil.handler.kval(hamil.handler.kmin) << ", "
+        << hamil.handler.kval(hamil.handler.kmax) << "]" << std::endl
+        << "    Momentum state subdivisions: " << hamil.handler.ksubdivs
+        << std::endl
         << "    Duration: " << duration_by_decay << " ("
         << hamil.detun_freq_per_decay*duration_by_decay << " cycles)"
         << std::endl
@@ -293,8 +297,8 @@ void print_system_info(const std::vector<std::complex<double>>& rho,
 double calc_krms(const std::vector<std::complex<double>>& rho,
     const DensMatHandler& handler) {
     double krms = 0;
-    for(int k = handler.kmin; k <= handler.kmax; ++k) {
-        krms += std::real(handler.partialtr_n(rho, k))*k*k;
+    for(int kidx = handler.kmin; kidx <= handler.kmax; ++kidx) {
+        krms += std::real(handler.partialtr_n(rho, kidx))*sqr(handler.kval(kidx));
     }
     return sqrt(krms);
 }
@@ -327,11 +331,11 @@ void write_state_info(std::ofstream& outfile, double t,
 }
 void write_kdist(std::ofstream& outfile, double t,
     const std::vector<std::complex<double>>& rho, const DensMatHandler& handler) {
-    for(int k = handler.kmin; k <= handler.kmax; ++k) {
-        outfile << t << " " << k
-            << " " << std::real(handler.partialtr_n(rho, k));
+    for(int kidx = handler.kmin; kidx <= handler.kmax; ++kidx) {
+        outfile << t << " " << handler.kval(kidx)
+            << " " << std::real(handler.partialtr_n(rho, kidx));
         for(unsigned n = 0; n < handler.nint; ++n) {
-            outfile << " " << std::real(handler.ele(rho, n, k, n, k));
+            outfile << " " << std::real(handler.ele(rho, n, kidx, n, kidx));
         }
         outfile << std::endl;
     }
