@@ -118,17 +118,7 @@ int main(int argc, char** argv) {
     ));
 
     // Write table headers
-    rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
-    for(int k = (hamil.handler.kmax*hamil.handler.kmin <= 0 ?
-            0 : std::min(std::abs(hamil.handler.kmax),
-                         std::abs(hamil.handler.kmin)));
-        k <= std::max(std::abs(hamil.handler.kmax),
-                      std::abs(hamil.handler.kmin));
-        ++k) {
-        rho_out << " |k" << k << "|";
-    }
-    rho_out << " |k_rms|";
-    rho_out << std::endl;
+    rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2) |k_rms|" << std::endl;
     std::string kdist_header = "t k P(k) P(n = 0, k), P(n = 1, k), P(n = 2, k)";
     kdistout << kdist_header << std::endl;
     kdistfinalout << kdist_header << std::endl;
