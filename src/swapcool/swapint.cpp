@@ -9,18 +9,25 @@ const std::string CYCLE_OUTFILEBASE = "cycles.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
+    // Parse the program name to find the project root directory
+    std::string progdir, progname;
+    std::tie(progname, progdir) = fileparts(argv[0]);
+    // The program binary will be in project/bin, assuming no symlinks
+    std::string projrootdir = progdir + "/..";
+
     if(argc > 3) {
-        std::cout << "Usage: ./swapint [<output directory>] [<config file>]"
+        std::cout << "Usage: " << progname
+            << " [<output directory>] [<config file>]"
             << std::endl;
         return 1;
     }
     // Read in a possible output directory
-    std::string output_dir = DEFAULT_OUTPUT_DIR;
+    std::string output_dir = fullfile(DEFAULT_OUTPUT_DIR, projrootdir);
     if(argc > 1) {
         output_dir = std::string(argv[1]);
     }
     // Read in a possible config file
-    std::string cfg_file = DEFAULT_CFG_FILE;
+    std::string cfg_file = fullfile(DEFAULT_CFG_FILE, projrootdir);
     if(argc > 2) {
         cfg_file = std::string(argv[2]);
     }

@@ -7,18 +7,25 @@ const std::string SPEED_DISTR_OUTFILEBASE = "speed_distr.out";
 const unsigned OUTFILENAME_PRECISION = 3;
 
 int main(int argc, char** argv) {
+    // Parse the program name to find the project root directory
+    std::string progdir, progname;
+    std::tie(progname, progdir) = fileparts(argv[0]);
+    // The program binary will be in project/bin, assuming no symlinks
+    std::string projrootdir = progdir + "/..";
+
     if(argc < 2 || argc > 4) {
-        std::cout << "Usage: ./optical_molasses <particle species>"
-            << " [<output directory>] [<config file>]" << std::endl;
+        std::cout << "Usage: " << progname
+            << " <particle species> [<output directory>] [<config file>]"
+            << std::endl;
         return 1;
     }
     // Read in a possible output directory
-    std::string output_dir = DEFAULT_OUTPUT_DIR;
+    std::string output_dir = fullfile(DEFAULT_OUTPUT_DIR, projrootdir);
     if(argc > 2) {
         output_dir = std::string(argv[2]);
     }
     // Read in a possible config file
-    std::string cfg_file = DEFAULT_CFG_FILE;
+    std::string cfg_file = fullfile(DEFAULT_CFG_FILE, projrootdir);
     if(argc > 3) {
         cfg_file = std::string(argv[3]);
     }
