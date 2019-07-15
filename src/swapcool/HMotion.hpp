@@ -40,6 +40,9 @@ struct HMotion : public HSwap {
     // Derivative operator to be passed to the timestepper
     std::vector<std::complex<double>> operator()(double,
         const std::vector<std::complex<double>>&) override;
+
+    // Modify the density matrix in preparation for a new cycle
+    void initialize_cycle(std::vector<std::complex<double>>&) const;
 };
 
 #endif

@@ -26,3 +26,9 @@ std::string tag_filename(std::string filename,
 std::string fullfile(std::string filename, std::string dir) {
     return dir + "/" + filename;
 }
+
+std::pair<std::string, std::string> fileparts(std::string path) {
+    std::string dir = path.substr(0, path.rfind("/"));
+    std::string filename = path.substr(path.rfind("/") + 1);
+    return std::make_pair(filename, dir);
+}

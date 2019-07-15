@@ -13,7 +13,10 @@ std::string tag_filename(std::string, std::string,
 std::string tag_filename(std::string, std::vector<std::string>,
     std::string prefix = "", std::string separator = "_");
 
-// Synthesize a filename and a path
+// Synthesize a filename and a directory
 std::string fullfile(std::string, std::string);
+// Separate a path into a filename and a directory
+// Assumes at least one "/" delimiter in the path
+std::pair<std::string, std::string> fileparts(std::string);
 
 #endif
