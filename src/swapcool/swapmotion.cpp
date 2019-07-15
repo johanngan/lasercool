@@ -120,6 +120,7 @@ int main(int argc, char** argv) {
     ));
 
     // Write table headers
+<<<<<<< HEAD
     rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)";
     for(int kidx = (hamil.handler.kmax*hamil.handler.kmin <= 0 ?
             0 : std::min(std::abs(hamil.handler.kmax),
@@ -131,6 +132,9 @@ int main(int argc, char** argv) {
     }
     rho_out << " |k_rms|";
     rho_out << std::endl;
+=======
+    rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2) |k_rms|" << std::endl;
+>>>>>>> origin/master
     std::string kdist_header = "t k P(k) P(n = 0, k), P(n = 1, k), P(n = 2, k)";
     kdistout << kdist_header << std::endl;
     kdistfinalout << kdist_header << std::endl;
