@@ -118,7 +118,8 @@ int main(int argc, char** argv) {
     ));
 
     // Write table headers
-    rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2) |k_rms|" << std::endl;
+    rho_out << "t |rho11| |rho22| |rho33| tr(rho) tr(rho^2)"
+        << " |k_rms| |k_rms(unleaked)|" << std::endl;
     std::string kdist_header = "t k P(k) P(n = 0, k), P(n = 1, k), P(n = 2, k)";
     kdistout << kdist_header << std::endl;
     kdistfinalout << kdist_header << std::endl;
@@ -296,6 +297,22 @@ double calc_krms(const std::vector<std::complex<double>>& rho,
     return sqrt(krms);
 }
 
+double calc_krms_unleaked(const std::vector<std::complex<double>>& rho,
+    const DensMatHandler& handler) {
+    // For renormalization
+    double unleaked_prob = std::real(
+        handler.partialtr_k(rho, 1) + handler.partialtr_k(rho, 2));
+
+    double krms = 0;
+    for(int k = handler.kmin; k <= handler.kmax; ++k) {
+        double prob = std::real(
+            handler.at(rho, 1, k, 1, k) + handler.at(rho, 2, k, 2, k)) \
+            / unleaked_prob;
+        krms += prob * k*k;
+    }
+    return sqrt(krms);
+}
+
 std::string evaluate_quality_metric(
     double metric,
     double low_thresh,
@@ -319,7 +336,8 @@ void write_state_info(std::ofstream& outfile, double t,
     }
     outfile << " " << std::real(handler.totaltr(rho))
         << " " << std::real(handler.purity(rho))
-        << " " << calc_krms(rho, handler);
+        << " " << calc_krms(rho, handler)
+        << " " << calc_krms_unleaked(rho, handler);
     outfile << std::endl;
 }
 void write_kdist(std::ofstream& outfile, double t,
