@@ -1,9 +1,19 @@
 1-D density matrix simulation of the "sawtooth-wave adiabatic passage" (SWAP) laser cooling technique, [first demonstrated in 2018 with Strontium-88](https://iopscience.iop.org/article/10.1088/1367-2630/aaa950), and [described theoretically 6 months later](https://journals.aps.org/pra/references/10.1103/PhysRevA.98.023404).
 
 # General explanation
+![An overall schematic of how SWAP works](images/swap_schematic.png)
+
 The principle behind SWAP is similar to that of the ordinary [optical molasses](optmol.md). The difference is that instead of a constant laser frequency or a single frequency chirp, the frequency is repeatedly ramped in a sawtooth wave pattern (from low to high) about the resonance frequency (about zero detuning).
 
-When the laser is just below the resonant frequency, the photon moving opposite to the particle is Doppler-shifted on resonance, and it gets absorbed and gives an momentum kick opposite to the particle's motion. Afterwards, when the laser is just above the resonant frequency, the photon moving in the same direction as the particle is Doppler-shifted on resonance, and it stimulates the already excited particle to emit a photon in the direction of its motion. The recoil from the emission gives the particle a second kick opposite to its motion. Hence SWAP cools a particle with a repeated "double-kick" action each sweep.
+![The SWAP sawtooth cycle](images/swap_frequency_cycle.png)
+
+When the laser is just below the resonant frequency, the photon moving opposite to the particle is Doppler-shifted on resonance, and it gets absorbed and gives an momentum kick opposite to the particle's motion. Afterwards, when the laser is just above the resonant frequency, the photon moving in the same direction as the particle is Doppler-shifted on resonance, and it stimulates the already excited particle to emit a photon in the direction of its motion. The recoil from the emission gives the particle a second kick opposite to its motion.
+
+![A depiction of what happens during one SWAP cycle](images/swap_cartoon.png)
+
+Hence SWAP cools a particle with a repeated "double-kick" action each sweep. Over multiple sweeps, the particles cool down to close to their lowest momentum state. The zero-momentum state receives kicks that heat it up, which prevents the particles from approaching absolute zero.
+
+![SWAP cooling over multiple cycles](images/swap_cooling_example.png)
 
 # Advantages of SWAP cooling
 SWAP cooling is a relatively new technique, and is not yet fully understood. However, it has a few promising properties compared to optical molasses.
@@ -28,6 +38,8 @@ The simulation itself is done in natural units, meaning all the frequencies are 
 The detuning is ramped in a sawtooth pattern with a given amplitude and frequency, which are both specified in the configuration file. "Frequency" in the sawtooth wave context means the inverse of the sawtooth period, and should not be confused with "frequency" in the sense that the quantity being ramped itself represents a laser frequency.
 
 To prevent Gibbs ringing, the Rabi frequency is turned on via a soft switch. The maximum value of the Rabi frequency is specified in the configuration file. The window is of the form: `exp(-coeff|(t-t_mid)/t_mid|^power)`, where t_mid is the halfway point of the sawtooth cycle (when detuning passes zero). `coeff` and `power` are parameters specified in the configuration file. `coeff` controls the "narrowness" of the turn-on, with a higher value yielding a shorter "on" period. Setting `coeff = 0` gives a hard/instantaneous switch. `power` controls the "sharpness" of the turn-on, with a higher value yielding a faster rate of switching on to maximum value.
+
+![Rabi frequency soft switch with coeff = 36, power = 8, and a maximum value of 1](images/swap_rabi_soft_switch.png)
 
 ## Internal state simulation
 `swapint` is a simulation of just particle internal states (unexcited, excited, etc.), without motional degrees of freedom. This is mainly just to observe the driven population transfer dynamics of SWAP.

@@ -7,6 +7,8 @@ Photons carry momentum, so the preferential absorption in the counter-propagatin
 
 In this simulation, the atoms are assumed to emit absorbed photons in a random direction. This prevents the temperature from reaching absolute zero, since these random emissions, while having no *average* effect, cause even the coldest atoms to jiggle around a bit.
 
+![Optical molasses cooling of Beryllium ions](images/optmol_berylliumplus.png)
+
 # Simulation details
 ## Absorption and emission
 Six lasers are shone on the atoms, one in each Cartesian direction (forward and backward). Absorption and re-emission is assumed to be fast, so if an absorption event occurs, re-emission happens instantaneously (same time step). Absorption probability is computed from the known formula and the Doppler-shifted detuning. Emission happens in a random direction on the unit sphere.
