@@ -7,6 +7,8 @@ Photons carry momentum, so the preferential absorption in the counter-propagatin
 
 In this simulation, the atoms are assumed to emit absorbed photons in a random direction. This prevents the temperature from reaching absolute zero, since these random emissions, while having no *average* effect, cause even the coldest atoms to jiggle around a bit.
 
+![Optical molasses cooling of Beryllium ions](images/optmol_berylliumplus.png)
+
 # Simulation details
 ## Absorption and emission
 Six lasers are shone on the atoms, one in each Cartesian direction (forward and backward). Absorption and re-emission is assumed to be fast, so if an absorption event occurs, re-emission happens instantaneously (same time step). Absorption probability is computed from the known formula and the Doppler-shifted detuning. Emission happens in a random direction on the unit sphere.
@@ -20,7 +22,7 @@ Pairs of particles can collide with each other in a random scattering event, whi
 If there are N particles, then every time step, N/2 random "candidate pairs" are chosen, so that if all the collisions happened, every particle is expected to participate in one collision. Out of the candidate pairs, each randomly collides or doesn't collide with a probability dependent on the relative speed of the pair. The collision probablity comes from [this paper](http://www.physics.purdue.edu/~robichf/papers/PoP10_2217.pdf), and is computed by matching `<theta^2>` in the "random rotation" model implemented in this code to the theoretical value given in the paper.
 
 # Usage
-Run `make optmol` in the top-level directory, set the parameters in `/config/params_optmol.cfg`, then run `/bin/optical_molasses` with the particle species string as an argument. Optionally give the path to the directory to write output to, and the path to the configuration file to use.
+Run `make optmol` in the top-level directory, set the parameters in `/config/params_optmol.cfg`, then run `/bin/optical_molasses` with the particle species string as an argument. Optionally give the path to a non-default directory to write output to, and the path to a non-default configuration file to use.
 
 ## Species string
 The particle species string sets the mass, decay rate, and transition frequency of the particle. These are hard coded with other fundamental constants in `constants.*pp`. Available species:
@@ -37,5 +39,5 @@ To add another species, add the three parameters to the constants files, add a c
 - final_detuning: -0.5. This leads to the minimum theoretical equilibrium temperature, i.e. the Doppler temperature.
 - detuning_ramp_rate: Such that the ramp finishes exactly when the simulation ends.
 
-## Code parameters
-Hard coded at the top of `optical_molasses.cpp`, including parameters like the default configuration file name and the output file base names. These shouldn't need to be modified, but if they do, simply change them and recompile.
+## Hard-coded parameters
+Hard coded at the top of `optical_molasses.cpp`, including parameters like the default configuration file name and the default output file base names. These shouldn't need to be modified, but if they do, simply change them and recompile.
