@@ -28,6 +28,9 @@ void print_system_info(const std::vector<std::complex<double>>&,
 // Calculate the RMS k value of a state
 double calc_krms(const std::vector<std::complex<double>>&,
     const DensMatHandler&);
+// Calculate the RMS k value within the population that hasn't leaked yet
+double calc_krms_unleaked(const std::vector<std::complex<double>>&,
+    const DensMatHandler&);
 // Quality metric evaluation string
 std::string evaluate_quality_metric(
     double,
