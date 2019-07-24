@@ -72,15 +72,13 @@ $(builddir)/optical_molasses.o: optical_molasses.cpp mathutil.hpp RandProcesses.
 $(builddir)/PhysicalParams.o: PhysicalParams.cpp mathutil.hpp
 $(builddir)/swapint.o: swapint.cpp timestepping.hpp
 $(builddir)/swapmotion.o: swapmotion.cpp timestepping.hpp
-$(builddir)/HMotion.o: HMotion.cpp
 
 $(builddir)/optical_molasses.o:
 	$(CC) -c $(ALL_CFLAGS) -I$(includedir) -I$(vendordir)/pcg-cpp-0.98/include $< -o $@
 
 $(builddir)/PhysicalParams.o \
 $(builddir)/swapint.o \
-$(builddir)/swapmotion.o \
-$(builddir)/HMotion.o:
+$(builddir)/swapmotion.o:
 	$(CC) -c $(ALL_CFLAGS) -I$(includedir) $< -o $@
 
 $(builddir)/%.o: %.cpp
