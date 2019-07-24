@@ -11,6 +11,7 @@
 #include <chrono>
 #include <algorithm>
 #include "lasercool/iotag.hpp"
+#include "lasercool/fundconst.hpp"
 #include "constants.hpp"
 #include "mathutil.hpp"
 #include "PhysicalParams.hpp"

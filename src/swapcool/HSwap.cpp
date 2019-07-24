@@ -1,7 +1,7 @@
 #include "HSwap.hpp"
 
-HSwap::HSwap(std::string fname):HBAR(1.054571800e-34),
-    cache({0, 0.5*detun_per_decay(0), 0.5*rabi_softswitch(0)}) {
+HSwap::HSwap(std::string fname)
+    : cache({0, 0.5*detun_per_decay(0), 0.5*rabi_softswitch(0)}) {
     double low_energy, high_energy;
     load_params(fname,
         {
@@ -17,7 +17,8 @@ HSwap::HSwap(std::string fname):HBAR(1.054571800e-34),
             {"detuning_frequency", &detun_freq_per_decay}
         }
     );
-    transition_angfreq_per_decay = (high_energy - low_energy)/(HBAR*decay_rate);
+    transition_angfreq_per_decay = (high_energy - low_energy)
+        /(fundamental_constants::HBAR*decay_rate);
 }
 
 double HSwap::rabi_softswitch(double gt) const {

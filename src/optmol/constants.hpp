@@ -1,15 +1,6 @@
 #ifndef CONSTANTS_HPP_
 #define CONSTANTS_HPP_
 
-// For pi:
-// #include<cmath>, then use the M_PI macro
-
-// Physical constants in SI units
-extern const double HBAR;
-extern const double SPEED_OF_LIGHT;
-extern const double VACUUM_PERMITTIVITY;
-extern const double ELEMENTARY_CHARGE;
-extern const double K_BOLTZMANN;
 // Single atom of Be
 extern const double MASS_BE_PLUS;
 extern const double DECAY_RATE_BE_PLUS;

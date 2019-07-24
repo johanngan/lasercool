@@ -5,13 +5,13 @@
 #include <vector>
 #include <complex>
 #include "lasercool/readcfg.hpp"
+#include "lasercool/fundconst.hpp"
 
 // Abstract class.
 // Hamiltonian for sawtooth laser frequency oscillating about
 // some transition frequency, and an exponential soft switch for the
 // Rabi frequency.
 struct HSwap{
-    const double HBAR;
     double branching_ratio; // To the "low" (but not ground) state
     double enable_decay;    // 1 for enabled and 0 for disabled
     double decay_rate;

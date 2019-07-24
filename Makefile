@@ -20,27 +20,29 @@ VPATH = \
 $(includedir)/lasercool:\
 $(srcdir)/iotag:\
 $(srcdir)/readcfg:\
+$(srcdir)/fundconst:\
 $(srcdir)/optmol:\
 $(srcdir)/swapcool
 
 # swapmotion needs extra linking for GSL integration
 PROG = optical_molasses swapint
 BINS = $(addprefix $(bindir)/, $(PROG))
-ARCHIVES = libreadcfg.a libiotag.a
+ARCHIVES = libreadcfg.a libiotag.a libfundconst.a
 LIBS = $(addprefix $(libdir)/, $(ARCHIVES))
 
-.PHONY: all clean libs readcfg iotag optmol swapint swapmotion swapcool
+.PHONY: all clean libs readcfg iotag fundconst optmol swapint swapmotion swapcool
 all: $(LIBS) $(BINS) swapmotion
 libs: $(LIBS)
 readcfg: $(libdir)/libreadcfg.a
 iotag: $(libdir)/libiotag.a
-optmol: readcfg iotag $(bindir)/optical_molasses
-swapint: readcfg iotag $(bindir)/swapint
-swapmotion: readcfg iotag $(bindir)/swapmotion
+fundconst: $(libdir)/libfundconst.a
+optmol: $(bindir)/optical_molasses
+swapint: $(bindir)/swapint
+swapmotion: $(bindir)/swapmotion
 swapcool: swapint swapmotion
 
 $(BINS):
-	$(LD) $(ALL_LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -o $@
+	$(LD) $(ALL_LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -lfundconst -o $@
 
 $(bindir)/swapmotion:
 	$(LD) $(ALL_LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -lgsl -lgslcblas -lm -o $@
@@ -48,24 +50,33 @@ $(bindir)/swapmotion:
 $(bindir)/optical_molasses: \
 $(builddir)/optical_molasses.o \
 $(builddir)/constants.o \
-$(builddir)/PhysicalParams.o
+$(builddir)/PhysicalParams.o \
+$(libdir)/libreadcfg.a \
+$(libdir)/libiotag.a \
+$(libdir)/libfundconst.a
 
 $(bindir)/swapint: \
 $(builddir)/swapint.o \
 $(builddir)/HInt.o \
-$(builddir)/HSwap.o
+$(builddir)/HSwap.o \
+$(libdir)/libreadcfg.a \
+$(libdir)/libiotag.a \
+$(libdir)/libfundconst.a
 
 $(bindir)/swapmotion: \
 $(builddir)/swapmotion.o \
 $(builddir)/HMotion.o \
 $(builddir)/HSwap.o \
-$(builddir)/DensMatHandler.o
+$(builddir)/DensMatHandler.o \
+$(libdir)/libreadcfg.a \
+$(libdir)/libiotag.a \
+$(libdir)/libfundconst.a
 
 $(builddir)/optical_molasses.o: optical_molasses.cpp mathutil.hpp RandProcesses.hpp
 $(builddir)/PhysicalParams.o: PhysicalParams.cpp mathutil.hpp
 $(builddir)/swapint.o: swapint.cpp timestepping.hpp
-$(builddir)/swapmotion.o: swapmotion.cpp timestepping.hpp HMotion.hpp DensMatHandler.hpp
-$(builddir)/HMotion.o: HMotion.cpp DensMatHandler.hpp
+$(builddir)/swapmotion.o: swapmotion.cpp timestepping.hpp
+$(builddir)/HMotion.o: HMotion.cpp
 
 $(builddir)/optical_molasses.o:
 	$(CC) -c $(ALL_CFLAGS) -I$(includedir) -I$(vendordir)/pcg-cpp-0.98/include $< -o $@

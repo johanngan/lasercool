@@ -6,6 +6,7 @@
 #include <string>
 #include <stdexcept>
 #include "lasercool/readcfg.hpp"
+#include "lasercool/fundconst.hpp"
 #include "constants.hpp"
 #include "mathutil.hpp"
 
@@ -48,13 +49,13 @@ struct PhysicalParams {
 
     inline static double calc_laser_wavenumber(double resonant_wavenumber,
         double detuning) {
-        return resonant_wavenumber + detuning/SPEED_OF_LIGHT;
+        return resonant_wavenumber + detuning/fundamental_constants::SPEED_OF_LIGHT;
     }
 
     // Equilibrium temperature, nonzero due to shot heating
     inline static double expected_min_temp(double decay_rate,
         double detuning) {
-        return -0.125*HBAR/K_BOLTZMANN
+        return -0.125*fundamental_constants::HBAR/fundamental_constants::K_BOLTZMANN
             * (sqr(decay_rate) + 4*sqr(detuning))/detuning;
     }
 
@@ -62,7 +63,7 @@ struct PhysicalParams {
     // greatest instantaneous cooling rate at a given temperature
     inline static double optimal_detuning(double temp, double mass,
         double wavenumber) {
-        return -wavenumber * sqrt(K_BOLTZMANN*temp/mass);
+        return -wavenumber * sqrt(fundamental_constants::K_BOLTZMANN*temp/mass);
     }
 };
 
