@@ -10,8 +10,7 @@ double dipole_integral(double theta1, double theta2) {
     return (theta2 - theta1 - 0.5*(sin(2*theta2) - sin(2*theta1))) / M_PI;
 }
 
-HMotion::HMotion(std::string fname):HSwap(fname),
-    SPEED_OF_LIGHT(299792458), K_BOLTZMANN(1.380649e-23) {
+HMotion::HMotion(std::string fname):HSwap(fname) {
     double mass, init_temp, ksigmas, kmin_double, kmax_double, ksubdivs_double;
     load_params(fname,
         {
@@ -28,8 +27,10 @@ HMotion::HMotion(std::string fname):HSwap(fname),
         ksubdivs_double = 1;
     }
 
-    double k_photon_per_decay = transition_angfreq_per_decay/SPEED_OF_LIGHT;
-    recoil_freq_per_decay = HBAR*sqr(k_photon_per_decay)*decay_rate/(2*mass);
+    double k_photon_per_decay = transition_angfreq_per_decay
+        /fundamental_constants::SPEED_OF_LIGHT;
+    recoil_freq_per_decay = fundamental_constants::HBAR
+        *sqr(k_photon_per_decay)*decay_rate/(2*mass);
 
     int kmin, kmax;
     // Manually set k range
@@ -46,8 +47,8 @@ HMotion::HMotion(std::string fname):HSwap(fname),
         }
         // Calculate k range from standard deviation
         kmax = static_cast<int>(std::round(ksigmas*
-            sqrt(K_BOLTZMANN*init_temp
-                / (2*HBAR*recoil_freq_per_decay*decay_rate))
+            sqrt(fundamental_constants::K_BOLTZMANN*init_temp
+                / (2*fundamental_constants::HBAR*recoil_freq_per_decay*decay_rate))
         ));
         kmin = -kmax;
     }
