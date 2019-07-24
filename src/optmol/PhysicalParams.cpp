@@ -46,8 +46,8 @@ PhysicalParams::PhysicalParams(std::string species, std::string fname):
     // Unchanging coefficient on the scattering probability, where
     // P(scatter in interval dt) = coeff*(coulomb log)*dt/(relative speed)^3
     // See http://www.physics.purdue.edu/~robichf/papers/PoP10_2217.pdf
-    scatter_coeff = particle_density*pow(ELEMENTARY_CHARGE, 4)
-        / (M_PI*sqr(VACUUM_PERMITTIVITY*mass));
+    scatter_coeff = particle_density*pow(fundamental_constants::ELEMENTARY_CHARGE, 4)
+        / (M_PI*sqr(fundamental_constants::VACUUM_PERMITTIVITY*mass));
 
     // Defaults and conversion to SI //
     if(std::isnan(final_detuning_per_decay_rate)) {

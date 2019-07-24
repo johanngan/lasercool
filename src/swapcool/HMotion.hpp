@@ -7,12 +7,12 @@
 
 #include "HSwap.hpp"
 #include "DensMatHandler.hpp"
+#include "lasercool/fundconst.hpp"
 
 // Hamiltonian for sawtooth laser frequency oscillating about
 // some transition frequency, under the rotating wave approximation,
 // including interaction with the laser and also motional states
 struct HMotion : public HSwap {
-    const double SPEED_OF_LIGHT, K_BOLTZMANN;
     // probability to decay from excited state without changing momentum
     double stationary_decay_prob;
     double recoil_freq_per_decay;

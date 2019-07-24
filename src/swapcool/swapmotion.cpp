@@ -219,9 +219,9 @@ std::vector<std::complex<double>> thermal_state(double temp,
     std::vector<std::complex<double>> rho(hamil.handler.idxmap.size());
     double partition_fn = 0;
     for(int k = hamil.handler.kmin; k <= hamil.handler.kmax; ++k) {
-        double boltz_weight = std::exp(
-            -hamil.HBAR*hamil.recoil_freq_per_decay*hamil.decay_rate*k*k
-            / (hamil.K_BOLTZMANN*temp));
+        double boltz_weight = std::exp(-fundamental_constants::HBAR
+            *hamil.recoil_freq_per_decay*hamil.decay_rate*k*k
+            / (fundamental_constants::K_BOLTZMANN*temp));
         partition_fn += boltz_weight;
         hamil.handler.at(rho, 1, k, 1, k) = boltz_weight;
     }

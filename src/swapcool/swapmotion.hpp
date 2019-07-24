@@ -13,6 +13,7 @@
 #include "lasercool/readcfg.hpp"
 #include "lasercool/iotag.hpp"
 #include "lasercool/timestepping.hpp"
+#include "lasercool/fundconst.hpp"
 
 // Generate a thermal state
 std::vector<std::complex<double>> thermal_state(double, const HMotion&);

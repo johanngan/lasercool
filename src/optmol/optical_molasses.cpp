@@ -40,7 +40,8 @@ int main(int argc, char** argv) {
     params.print();
 
     // Thermal velocity standard deviation of velocity components is sqrt(kT/m)
-    double thermal_v_stddev = sqrt(K_BOLTZMANN*params.initial_temp/params.mass);
+    double thermal_v_stddev = sqrt(
+        fundamental_constants::K_BOLTZMANN*params.initial_temp/params.mass);
 
     // Initialize randomizer object with generator, thermal stddev,
     // and particle number
@@ -85,7 +86,8 @@ int main(int argc, char** argv) {
     unsigned steps_between_snapshots = params.n_time_steps / (n_snapshots - 1);
     // Initial average kinetic energy
     energy_outfile << 0 << " "
-        << calc_avg_kinetic_energy(v_particles, params.mass)/K_BOLTZMANN;
+        << calc_avg_kinetic_energy(v_particles, params.mass)
+            / fundamental_constants::K_BOLTZMANN;
 
     // Initial speed distribution
     std::ofstream speed_init_outfile(fullfile(tag_filename(
@@ -116,7 +118,7 @@ int main(int argc, char** argv) {
         double laser_wavenumber = PhysicalParams::calc_laser_wavenumber(
             params.resonant_wavenumber, detuning);
         // velocity kick from a single photon absorption/emission
-        double v_kick = HBAR*laser_wavenumber / params.mass;
+        double v_kick = fundamental_constants::HBAR*laser_wavenumber / params.mass;
 
         // Run over each particle
         for(auto vp = v_particles.begin(); vp != v_particles.end(); ++vp) {
@@ -167,7 +169,7 @@ int main(int argc, char** argv) {
         double avgKE = calc_avg_kinetic_energy(v_particles, params.mass);
         if((i+1) % steps_between_snapshots == 0) {
             energy_outfile << std::endl << (i+1)*params.dt << " " <<
-                avgKE/K_BOLTZMANN;
+                avgKE/fundamental_constants::K_BOLTZMANN;
         }
 
         // Scatter some number of particles if possible
@@ -180,8 +182,10 @@ int main(int argc, char** argv) {
                 double rel_speed = calc_rel_speed(
                     v_particles[idxs.first], v_particles[idxs.second]);
                 // 1+ to keep the argument above 1
-                double coulomb_log = log(1 + 12*M_PI/cube(ELEMENTARY_CHARGE)
-                    * sqrt(8*cube(VACUUM_PERMITTIVITY*avgKE)/(27*params.particle_density)));
+                double coulomb_log = log(1
+                    + 12*M_PI/cube(fundamental_constants::ELEMENTARY_CHARGE)
+                    * sqrt(8*cube(fundamental_constants::VACUUM_PERMITTIVITY*avgKE)
+                    /(27*params.particle_density)));
                 double scatter_prob = params.scatter_coeff*coulomb_log*params.dt
                     /cube(rel_speed);
 

@@ -5,7 +5,6 @@ template<typename T>
 inline T sqr(T x) {return x*x;}
 
 HMotion::HMotion(std::string fname):HSwap(fname),
-    SPEED_OF_LIGHT(299792458), K_BOLTZMANN(1.380649e-23),
     stationary_decay_prob(0.6) {
     double mass, init_temp, ksigmas, kmin_double, kmax_double;
     load_params(fname,
@@ -17,8 +16,10 @@ HMotion::HMotion(std::string fname):HSwap(fname),
             {"max_momentum", &kmax_double}
         }
     );
-    double k_photon_per_decay = transition_angfreq_per_decay/SPEED_OF_LIGHT;
-    recoil_freq_per_decay = HBAR*sqr(k_photon_per_decay)*decay_rate/(2*mass);
+    double k_photon_per_decay = transition_angfreq_per_decay
+        /fundamental_constants::SPEED_OF_LIGHT;
+    recoil_freq_per_decay = fundamental_constants::HBAR
+        *sqr(k_photon_per_decay)*decay_rate/(2*mass);
 
     int kmin, kmax;
     // Manually set k range
@@ -35,8 +36,8 @@ HMotion::HMotion(std::string fname):HSwap(fname),
         }
         // Calculate k range from standard deviation
         kmax = static_cast<int>(std::round(ksigmas*
-            sqrt(K_BOLTZMANN*init_temp
-                / (2*HBAR*recoil_freq_per_decay*decay_rate))
+            sqrt(fundamental_constants::K_BOLTZMANN*init_temp
+                / (2*fundamental_constants::HBAR*recoil_freq_per_decay*decay_rate))
         ));
         kmin = -kmax;
     }
