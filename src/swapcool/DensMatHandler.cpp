@@ -3,7 +3,7 @@
 DensMatHandler::DensMatHandler(int kmin, int kmax):
     nint(3), kmin(kmin), kmax(kmax) {
     if(kmin > kmax) {
-        throw std::invalid_argument("Min momentum greater than max momentum.");
+        throw std::invalid_argument("Min state greater than max state.");
     }
     // Calculate state numbers/increments
     kstates = kmax - kmin + 1;

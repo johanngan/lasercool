@@ -62,27 +62,35 @@ Spontaneous decay is controlled by the Lindblad superoperator, which adds an exp
 ## Motional and internal state simulation
 `swapmotion` simulates both particle internal states and motional degrees of freedom. The simulation of particle motion allows cooling to be observed.
 
+`swapharmonic` simulates particle internal states and motional degrees of freedom when particles are held within a harmonic trap.
+
 ### Tracked states
-The momentum states ("k-states") are tracked in integer multiples of the recoil wave number, `k_rec = hbar*k_{laser}^2/(2*mass)`. The range of momentum states to track is specified in the configuration file. By default, states are tracked within 3 standard deviations of the initial thermal distribution. The number of standard deviations can be overriden. The range itself can also be explicitly specified. If the maximum k-state is given but not the minimum, the minimum will default to the negative of the maximum k-state. Both a maximum and a minimum k-state can be given as well, and need not be symmetric about k = 0 (or even contain k = 0, for that matter).
+In `swapmotion`, the momentum states ("k-states") are tracked in integer multiples of the recoil wave number, `k_rec = hbar*k_{laser}^2/(2*mass)`. The range of momentum states to track is specified in the configuration file. By default, states are tracked within 3 standard deviations of the initial thermal distribution. The number of standard deviations can be overriden. The range itself can also be explicitly specified. If the maximum k-state is given but not the minimum, the minimum will default to the negative of the maximum k-state. Both a maximum and a minimum k-state can be given as well, and need not be symmetric about k = 0 (or even contain k = 0, for that matter).
 
 The internal states are identical to those in `swapint`. These are meshed with the momentum states to form the simulation basis.
+
+In `swapharmonic`, instead of k-states, the discrete oscillator states |n> are tracked.
 
 ### Master equation
 The Hamiltonian is similar to that of the internal state simulation, but it needs to couple the motional states. When a particle is excited or de-excited, its momentum state must either increase or decrease by one.
 
 When a particle undergoes spontaneous decay, it can either drop to state 0 or state 1. If it drops to state 0, the momentum state is preserved. If it drops to state 1, it has a 1/5 chance of increasing or decreasing in momentum by one, and a 3/5 chance of staying at the same momentum state. The probabilities are motivated by a dipole radiation pattern `f(theta) ~ sin^2(theta)`.
 
+For harmonic oscillator simulation, the Hamiltonian and spontaneous decay terms no longer just couple adjacent motional states, and instead have some degree of coupling between all states, the size of which is determined by projections of cos(kx) and e^(ikx) on oscillator states (i.e. <n'|cos(kx)|n> and <n'|e^(ikx)|n>).
+
 #### Boundary conditions
-Open boundary conditions are used for the momentum states. When the k-state gets too high or too low, it is lost from the simulation. Make sure to pick a large enough range of k-states to prevent excessive population loss.
+For `swapmotion`, open boundary conditions are used for the momentum states. When the k-state gets too high or too low, it is lost from the simulation. Make sure to pick a large enough range of k-states to prevent excessive population loss.
+
+For `swapharmonic`, the same is true for oscillator states.
 
 ### Output
-`swapmotion` outputs three files, `rho_*.out`, `kdist_*.out`, and `kdist_final_*.out`, where the "*" is determined by the simulation parameters.
+`swapmotion` (`swapharmonic`) output three files, `rho_*.out`, `kdist_*.out` (`hdist_*.out`), and `kdist_final_*.out` (`hdist_final_*.out`), where the "*" is determined by the simulation parameters.
 
 `rho_*.out` contains state population information at each time step, including the population in each internal state (traced across momentum states), the total trace (should stay close to 1), the "state purity" (Tr(rho^2)), the root-mean-square momentum value (proportional to the square root of the temperature), and the root-mean-square momentum value of just the "unleaked" population (in states 1 and 2).
 
-`kdist_*.out` contains full momentum distribution information at each time step, in a tall data format. Each line is labeled with a time value, a momentum value, and the proportions of the population in that momentum state (traced over internal state, and individually in states 0, 1, and 2).
+`kdist_*.out` (`hdist_*.out` for `swapharmonic`) contains full momentum (oscillator state) distribution information at each time step, in a tall data format. Each line is labeled with a time value, a momentum (n for `swapharmonic`) value, and the proportions of the population in that momentum state (traced over internal state, and individually in states 0, 1, and 2).
 
-`kdist_final_*.out` contains momentum distribution information at just the final time, in the same format as `kdist_*.out`. This is redundant with `kdist_*.out`, and is mainly for convenience of analysis.
+`kdist_final_*.out` (`hdist_final_*.out` for `swapharmonic`) contains momentum (oscillator state) distribution information at just the final time, in the same format as `kdist_*.out` (`hdist_*.out`). This is redundant with `kdist_*.out` (`hdist_*.out`), and is mainly for convenience of analysis.
 
 ### Initial state
 The initial momentum state population can be either set to a thermal (normal) distribution of a given temperature, or to a single pure momentum state. If the single momentum state field is specified as nan in the configuration file, a thermal state will be used. If an actual momentum state is given, it will override the temperature and initialize the system in a pure state.
@@ -91,7 +99,7 @@ The initial momentum state population can be either set to a thermal (normal) di
 To prevent the buildup of coherences, which are detrimental to SWAP's performance, the density matrix is "reset" after every sawtooth cycle. In experiment, this would be equivalent to having a delay period between sawtooth cycles. In simulation, resetting means "fast-forwarding" in time by setting all coherences to zero, and forcing the decay of the excited state populations to be distributed between their ground state neighbors, in accordance with the dipole radiation pattern determining the Lindblad decay term.
 
 # Usage
-Run `make swapcool` in the top-level directory, set the parameters in `/config/params_swapcool.cfg`, then run `/bin/swapint` or `/bin/swapmotion`. Optionally give the path to a non-default directory to write output to, and the path to a non-default configuration file to use. For `swapmotion`, a final optional parameter, `--batch-mode` (or `-b` for short) can be specified to enable batch mode, which suppresses all console output.
+Run `make swapcool` in the top-level directory, set the parameters in `/config/params_swapcool.cfg` and/or `/config/params_swapharmonic.cfg`, then run `/bin/swapint`, `/bin/swapmotion`, and/or `/bin/swapharmonic`. Optionally give the path to a non-default directory to write output to, and the path to a non-default configuration file to use. For `swapmotion` and `swapharmonic`, a final optional parameter, `--batch-mode` (or `-b` for short) can be specified to enable batch mode, which suppresses all console output.
 
 ## OpenMP Capability
 If OpenMP is available on your machine, enable it by adding the appropriate compiler/linker flags when running make. I.e. compile swapcool with `make swapcool CFLAGS=-openmp FLAGS=-fopenmp`.
@@ -101,5 +109,7 @@ Set the number of threads with the environment variable `OMP_NUM_THREADS`. E.g. 
 ## Lab parameters
 `params_swapcool.cfg` contains different experimental parameters that might need to be changed. They are read at runtime and don't require recompilation to change. `swapint` and `swapmotion` are made to use a shared set of parameters, with swapmotion having some extra ones. Configuration files can be shared between the two programs; `swapint` will ignore the `swapmotion`-only parameters.
 
+`params_swapharmonic.cfg` contain experimental parameters for simulating SWAP in a harmonic trap. Many parameters are shared with `params_swapcool.cfg`, but there are some extra ones specifically for the harmonic oscillator.
+
 ## Hard-coded parameters
-Hard coded at the top of `swapint.cpp` and `swapmotion.cpp`, including parameters like the default configuration file name and the default output file names. These shouldn't need to be modified, but if they do, simply change them and recompile.
+Hard coded at the top of `swapint.cpp`, `swapmotion.cpp`, and `swapharmonic.cpp`, including parameters like the default configuration file name and the default output file names. These shouldn't need to be modified, but if they do, simply change them and recompile.

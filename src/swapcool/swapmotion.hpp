@@ -8,7 +8,7 @@
 #include <complex>
 #include <vector>
 #include <chrono>
-#include "HMotion.hpp"
+#include "HFreeMotion.hpp"
 #include "DensMatHandler.hpp"
 #include "lasercool/readcfg.hpp"
 #include "lasercool/iotag.hpp"
@@ -16,10 +16,10 @@
 #include "lasercool/fundconst.hpp"
 
 // Generate a thermal state
-std::vector<std::complex<double>> thermal_state(double, const HMotion&);
+std::vector<std::complex<double>> thermal_state(double, const HFreeMotion&);
 // Print out information about the system
 void print_system_info(const std::vector<std::complex<double>>&,
-    const HMotion&, double, double, bool, double, double);
+    const HFreeMotion&, double, double, bool, double, double);
 // Calculate the RMS k value of a state
 double calc_krms(const std::vector<std::complex<double>>&,
     const DensMatHandler&);

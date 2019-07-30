@@ -24,12 +24,13 @@ $(srcdir)/fundconst:\
 $(srcdir)/optmol:\
 $(srcdir)/swapcool
 
-PROG = optical_molasses swapint swapmotion
+PROG = optical_molasses swapint swapmotion swapharmonic
 BINS = $(addprefix $(bindir)/, $(PROG))
 ARCHIVES = libreadcfg.a libiotag.a libfundconst.a
 LIBS = $(addprefix $(libdir)/, $(ARCHIVES))
 
-.PHONY: all clean libs readcfg iotag fundconst optmol swapint swapmotion swapcool
+.PHONY: all clean libs readcfg iotag fundconst optmol \
+swapint swapmotion swapharmonic swapcool
 all: $(LIBS) $(BINS)
 libs: $(LIBS)
 readcfg: $(libdir)/libreadcfg.a
@@ -38,7 +39,8 @@ fundconst: $(libdir)/libfundconst.a
 optmol: $(bindir)/optical_molasses
 swapint: $(bindir)/swapint
 swapmotion: $(bindir)/swapmotion
-swapcool: swapint swapmotion
+swapharmonic: $(bindir)/swapharmonic
+swapcool: swapint swapmotion swapharmonic
 
 $(BINS):
 	$(LD) $(ALL_LFLAGS) $^ -L$(libdir) -lreadcfg -liotag -lfundconst -o $@
@@ -61,6 +63,17 @@ $(libdir)/libfundconst.a
 
 $(bindir)/swapmotion: \
 $(builddir)/swapmotion.o \
+$(builddir)/HFreeMotion.o \
+$(builddir)/HMotion.o \
+$(builddir)/HSwap.o \
+$(builddir)/DensMatHandler.o \
+$(libdir)/libreadcfg.a \
+$(libdir)/libiotag.a \
+$(libdir)/libfundconst.a
+
+$(bindir)/swapharmonic: \
+$(builddir)/swapharmonic.o \
+$(builddir)/HHarmonic.o \
 $(builddir)/HMotion.o \
 $(builddir)/HSwap.o \
 $(builddir)/DensMatHandler.o \
@@ -72,13 +85,15 @@ $(builddir)/optical_molasses.o: optical_molasses.cpp mathutil.hpp RandProcesses.
 $(builddir)/PhysicalParams.o: PhysicalParams.cpp mathutil.hpp
 $(builddir)/swapint.o: swapint.cpp timestepping.hpp
 $(builddir)/swapmotion.o: swapmotion.cpp timestepping.hpp
+$(builddir)/swapharmonic.o: swapharmonic.cpp timestepping.hpp
 
 $(builddir)/optical_molasses.o:
 	$(CC) -c $(ALL_CFLAGS) -I$(includedir) -I$(vendordir)/pcg-cpp-0.98/include $< -o $@
 
 $(builddir)/PhysicalParams.o \
 $(builddir)/swapint.o \
-$(builddir)/swapmotion.o:
+$(builddir)/swapmotion.o \
+$(builddir)/swapharmonic.o:
 	$(CC) -c $(ALL_CFLAGS) -I$(includedir) $< -o $@
 
 $(builddir)/%.o: %.cpp

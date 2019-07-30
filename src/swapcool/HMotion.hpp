@@ -7,15 +7,13 @@
 
 #include "HSwap.hpp"
 #include "DensMatHandler.hpp"
-#include "lasercool/fundconst.hpp"
 
 // Hamiltonian for sawtooth laser frequency oscillating about
 // some transition frequency, under the rotating wave approximation,
 // including interaction with the laser and also motional states
 struct HMotion : public HSwap {
-    // probability to decay from excited state without changing momentum
+    // probability to decay from excited state without changing motional state
     double stationary_decay_prob;
-    double recoil_freq_per_decay;
     DensMatHandler handler;
 
     HMotion(std::string);
@@ -24,12 +22,14 @@ struct HMotion : public HSwap {
     // component of H*rho
     // Optionally provide a precomputed stored index for speed
     // -1 means no index is provided
-    std::complex<double> haction(const std::vector<std::complex<double>>&,
-        unsigned, int, unsigned, int, int idx=-1) const;
+    virtual std::complex<double> haction(
+        const std::vector<std::complex<double>>&,
+        unsigned, int, unsigned, int, int idx=-1) const = 0;
     
     // The spontaneous decay part of the derivative (Lindblad superoperator)
-    std::complex<double> decayterm(const std::vector<std::complex<double>>&,
-        unsigned, int, unsigned, int, unsigned) const;
+    virtual std::complex<double> decayterm(
+        const std::vector<std::complex<double>>&,
+        unsigned, int, unsigned, int, unsigned) const = 0;
 
     // Transforms the coefficients solved for in the rotating wave
     // approximation back to the actual density matrix values;
@@ -42,7 +42,7 @@ struct HMotion : public HSwap {
         const std::vector<std::complex<double>>&) override;
 
     // Modify the density matrix in preparation for a new cycle
-    void initialize_cycle(std::vector<std::complex<double>>&) const;
+    virtual void initialize_cycle(std::vector<std::complex<double>>&) const = 0;
 };
 
 #endif
