@@ -154,6 +154,9 @@ std::vector<std::complex<double>> HMotion::operator()(double gt,
 }
 
 void HMotion::initialize_cycle(std::vector<std::complex<double>>& rho) const {
+    // Only run decays if they're enabled
+    if(!enable_decay) return;
+
     for(int kl = handler.kmin; kl <= handler.kmax; ++kl) {
         for(int kr = handler.kmin; kr <= handler.kmax; ++kr) {
             // Excited state population and intra-excited-state coherences

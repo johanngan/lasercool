@@ -9,6 +9,7 @@ Run `make` in the top-level directory. The generated executables are stored in t
 
 # Notes on some other directories
 - `config/` holds default configuration files for the simulations.
+- `doc/` holds explanations of the physics of the simulated cooling methods, as well as code documentation.
 - `scripts/plotting/` contains simple Python scripts for quick and dirty plotting.
 - `vendor/pcg-cpp-0.98/` contains the PCG RNG, which provides faster random number generation than the C++ <random> library.
 
