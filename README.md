@@ -1,3 +1,5 @@
+Paper: https://arxiv.org/abs/1909.11698
+
 A collection of simulations related to different laser cooling methods.
 
 # Usage
