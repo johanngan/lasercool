@@ -1,4 +1,4 @@
-Paper: https://arxiv.org/abs/1909.11698
+[Paper](https://doi.org/10.1103/PhysRevA.101.013422) ([e-Print](https://arxiv.org/abs/1909.11698))
 
 A collection of simulations related to different laser cooling methods.
 
